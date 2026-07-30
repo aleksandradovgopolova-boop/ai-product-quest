@@ -109,7 +109,10 @@ test("source no longer routes every page through GameMission", async () => {
   assert.match(hud, /canGoBack/);
   assert.match(gameCss, /translate: -50% -50%/);
   assert.match(gameCss, /@media \(max-width: 820px\)[\s\S]*overflow: hidden/);
-  assert.match(gameCss, /@media \(max-width: 520px\)[\s\S]*\.system-progress[\s\S]*bottom: 90px/);
+  // The progress rail is part of the topbar, not a second thing pinned to the viewport floor.
+  assert.doesNotMatch(gameCss, /\.system-progress\s*\{[^}]*position: fixed/);
+  assert.doesNotMatch(gameCss, /\.flow-time/);
+  assert.doesNotMatch(hud, /SystemClock/);
   assert.match(gameCss, /@media \(max-width: 520px\)[\s\S]*\.flow-command[\s\S]*display: none/);
   assert.doesNotMatch(gameCss, /\.flow-scene\\s*\\{[^}]*transform: translate\(-50%, -50%\)/s);
   assert.doesNotMatch(packageJson, /"framer-motion"|"lucide-react"|"zustand"/);

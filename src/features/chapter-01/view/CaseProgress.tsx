@@ -4,7 +4,7 @@ export function CaseProgress({ current, steps }: { current: number; steps: strin
   const currentStep = steps[current - 1] ?? steps[0] ?? "Дело";
 
   return (
-    <footer className="system-progress" aria-label={`Ход дела: ${currentStep}, этап ${current} из ${steps.length}`}>
+    <div className="system-progress" aria-label={`Ход дела: ${currentStep}, этап ${current} из ${steps.length}`}>
       <div className="case-progress-meta">
         <strong>{currentStep}</strong>
         <em>{current} из {steps.length}</em>
@@ -23,6 +23,6 @@ export function CaseProgress({ current, steps }: { current: number; steps: strin
           );
         })}
       </div>
-    </footer>
+    </div>
   );
 }

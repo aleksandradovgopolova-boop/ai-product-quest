@@ -8,7 +8,6 @@ import { CodexOverlay } from "@/src/features/chapter-01/view/CodexOverlay";
 import {
   HotkeyHint,
   ProcessingBlock,
-  SystemClock,
   SystemFrame,
   SystemMessage,
   SystemStatus,
@@ -65,7 +64,11 @@ export function Chapter01View({
         <div className="flow-field" aria-hidden="true" />
         <div className="flow-noise" aria-hidden="true" />
         {!isBare ? <SystemFrame /> : null}
-        {!isBare ? <SystemTopbar caseShort={`ДЕЛО №${String(chapter.number).padStart(2, "0")}`} caseSummary={chapter.summary} caseTitle={chapter.title} /> : null}
+        {!isBare ? (
+          <SystemTopbar caseShort={`ДЕЛО №${String(chapter.number).padStart(2, "0")}`} caseSummary={chapter.summary} caseTitle={chapter.title}>
+            <CaseProgress current={campaign.dashboard.currentStepIndex} steps={chapter.caseSteps} />
+          </SystemTopbar>
+        ) : null}
         {!isBare ? <SystemStatus value={status} /> : null}
         {!isBare ? <SystemMessage text={systemMessage} /> : null}
 
@@ -79,8 +82,6 @@ export function Chapter01View({
             key={campaign.currentSceneId}
             transition={sceneTransition}
           >
-            {!isBare || scene.time ? <SystemClock value={scene.time ?? "08:42:17"} /> : null}
-
             <div className="flow-present">
               {scene.prompt ? <Speaker lines={interpolateLines(scene.prompt, campaign.variables)} shouldReduceMotion={shouldReduceMotion} /> : null}
               {scene.hypothesis ? <HypothesisReadout text={scene.hypothesis.text} /> : null}
@@ -125,7 +126,6 @@ export function Chapter01View({
           </button>
         ) : null}
 
-        {!isBare ? <CaseProgress current={campaign.dashboard.currentStepIndex} steps={chapter.caseSteps} /> : null}
         {!isBare ? <HotkeyHint canGoBack={canGoBack} choiceCount={choices.length} codexUnlocked={campaign.unlockedCodexEntryIds.length > 0} /> : null}
 
         <AnimatePresence>

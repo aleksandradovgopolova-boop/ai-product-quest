@@ -56,7 +56,6 @@ export type SceneChoice = {
 export type Scene = {
   id: string;
   stepIndex: number;
-  time?: string;
   tone?: SceneTone;
   visual?: SceneVisual;
   chrome?: SceneChrome;

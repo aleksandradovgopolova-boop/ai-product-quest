@@ -121,12 +121,20 @@
   display: none;
 }
 
+/* The case brief and the progress rail answer the same question, so they share a row. */
+.system-topbar-lower {
+  align-items: start;
+  display: grid;
+  gap: clamp(24px, 4vw, 64px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  margin-top: 18px;
+}
+
 .system-case-brief {
   color: var(--muted);
   display: grid;
   font-size: 0.74rem;
   gap: 8px;
-  margin-top: 18px;
   max-width: 560px;
 }
 
@@ -171,15 +179,6 @@
   width: min(84vw, 1080px);
 }
 
-.flow-time {
-  color: var(--accent);
-  display: inline-flex;
-  font-size: clamp(0.95rem, 1.4vw, 1.35rem);
-  gap: 4px;
-  letter-spacing: 0;
-}
-
-.flow-time i,
 .line-cursor {
   animation: cursor-blink 1.04s steps(1, end) infinite;
   background: var(--accent);
@@ -214,9 +213,14 @@
   width: min(78vw, 820px);
 }
 
-.flow-scene-terminal,
-.flow-scene-dialogue {
+.flow-scene-terminal {
   max-width: 760px;
+}
+
+/* Wide enough that Zero's longest sentence still lands on a single line. */
+.flow-scene-dialogue {
+  max-width: 880px;
+  width: min(84vw, 880px);
 }
 
 .flow-scene-terminal .flow-copy {
@@ -231,10 +235,15 @@
   text-shadow: none;
 }
 
+/* Zero speaks in whole sentences, so the type is sized to hold one without wrapping. */
 .flow-scene-dialogue .flow-line {
-  font-size: clamp(1.32rem, min(3.2vw, 5.4vh), 2.75rem);
-  font-weight: 460;
-  line-height: 1.22;
+  font-size: clamp(1.02rem, min(2.2vw, 3.4vh), 1.5rem);
+  font-weight: 440;
+  line-height: 1.38;
+}
+
+.flow-scene-dialogue .flow-copy {
+  gap: 10px;
 }
 
 .flow-scene-title {
@@ -480,18 +489,14 @@
 }
 
 .system-progress {
-  bottom: clamp(28px, 3vw, 46px);
-  left: clamp(48px, 5vw, 76px);
-  position: fixed;
-  /* Stops before the keyboard hints so the rail never sits under them. */
-  width: min(58vw, 780px);
+  min-width: 0;
 }
 
 .case-progress-meta {
-  align-items: end;
+  align-items: baseline;
   display: flex;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .case-progress-meta strong {
@@ -645,13 +650,14 @@
     display: inline;
   }
 
+  /* Clears the topbar, which now carries the progress rail under the case brief. */
   .system-status {
     bottom: auto;
     left: 34px;
     position: fixed;
     right: 34px;
     text-align: left;
-    top: 108px;
+    top: 152px;
   }
 
   .flow-scene {
@@ -677,8 +683,8 @@
     gap: clamp(14px, 2.6vh, 24px);
   }
 
-  .flow-time {
-    font-size: clamp(0.82rem, min(4vw, 2.4vh), 1.1rem);
+  .flow-scene-dialogue .flow-line {
+    font-size: clamp(0.98rem, min(4.4vw, 2.7vh), 1.32rem);
   }
 
   .flow-choice {
@@ -691,16 +697,17 @@
     display: none;
   }
 
-  .system-progress,
+  /* Too narrow for two columns: the brief drops away and the rail keeps the row. */
+  .system-topbar-lower {
+    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 12px;
+  }
+
   .system-keys {
     left: 34px;
     position: fixed;
     right: 34px;
-  }
-
-  .system-progress {
-    bottom: 68px;
-    width: auto;
   }
 
   .case-progress-meta {
@@ -741,14 +748,13 @@
 
   .system-topbar,
   .system-status,
-  .system-progress,
   .system-keys {
     left: 28px;
     right: 28px;
   }
 
   .system-status {
-    top: 94px;
+    top: 138px;
   }
 
   .flow-scene {
@@ -760,12 +766,10 @@
     display: none;
   }
 
-  .flow-command {
-    right: 28px;
-  }
-
-  .system-progress {
-    bottom: 90px;
+  /* Without labels the six steps fit one row, so the rail stays a single band of dots. */
+  .progress-track {
+    gap: 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .flow-command {
@@ -797,12 +801,12 @@
   .system-status {
     bottom: auto;
     right: 64px;
-    top: 126px;
+    top: 172px;
   }
 
   .system-message {
     right: 64px;
-    top: 182px;
+    top: 228px;
   }
 
   .flow-scene {
@@ -810,10 +814,6 @@
     top: 52%;
     /* Stays clear of the status readout so a tall scene never reaches into it. */
     width: min(74vw, 900px);
-  }
-
-  .flow-time {
-    font-size: clamp(0.86rem, min(1.25vw, 2.8vh), 1.1rem);
   }
 
   .flow-present {
@@ -835,14 +835,12 @@
     padding: 0 18px;
   }
 
-  .system-progress {
-    bottom: 32px;
-    left: 64px;
-    width: min(52vw, 660px);
+  .system-topbar-lower {
+    margin-top: 12px;
   }
 
   .case-progress-meta {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .progress-node {
