@@ -55,6 +55,9 @@ export type SessionReport = {
 const incidentSceneId = "incident";
 const finalSceneId = "final";
 
+/** The one decision that holds the report back until a source exists. */
+export const safeDecisionId = "quarantine-report";
+
 export function projectSessionReport(content: PlatformContent, state: CampaignState): SessionReport {
   const chapter = getChapter(content, state.currentChapterId);
   const events = state.eventLog;

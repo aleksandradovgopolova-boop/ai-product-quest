@@ -1,0 +1,31 @@
+{
+  "_comment": "Манифест когорты для npm run report:cohort. Пути к сейвам — относительно этого файла. Роли: product, analyst, project-manager, control. Оценка интервью заполняется наблюдателем по вопросам 2, 4, 5, 6 из docs/product/chapter-01-validation.md.",
+  "runs": [
+    {
+      "participant": "P1",
+      "role": "product",
+      "chapterVersion": "v1",
+      "save": "./run-01.json",
+      "interview": {
+        "transferAnswered": true,
+        "explainedPrinciple": true,
+        "justifiedDecision": true,
+        "mechanismsNamed": 2,
+        "wantsNextChapter": true
+      }
+    },
+    {
+      "participant": "P2",
+      "role": "product",
+      "chapterVersion": "v1",
+      "save": "./run-02.json",
+      "interview": {
+        "transferAnswered": false,
+        "explainedPrinciple": true,
+        "justifiedDecision": false,
+        "mechanismsNamed": 1,
+        "wantsNextChapter": true
+      }
+    }
+  ]
+}
