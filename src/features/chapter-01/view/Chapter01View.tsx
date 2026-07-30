@@ -93,6 +93,7 @@ export function Chapter01View({
 
               {scene.visual === "context" ? <ContextTrace evidence={scene.evidence ?? []} /> : null}
               {scene.visual === "signal" ? <SystemSignal /> : null}
+              {scene.showEffects ? <EffectsReadout campaign={campaign} labels={content.metricLabels} /> : null}
             </div>
 
             {choices.length > 0 ? (
@@ -199,6 +200,31 @@ function SystemSignal() {
     >
       <i />
     </motion.div>
+  );
+}
+
+function EffectsReadout({ campaign, labels }: { campaign: CampaignState; labels: Record<string, string> }) {
+  const decision = Object.values(campaign.decisions).at(-1);
+  const rows = Object.entries(decision?.effects ?? {})
+    .filter(([metric, delta]) => delta !== 0 && labels[metric])
+    .sort(([, first], [, second]) => Math.abs(second) - Math.abs(first));
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flow-effects" aria-label="Что изменило решение">
+      <span className="effects-title">РЕШЕНИЕ ИЗМЕНИЛО СИСТЕМУ</span>
+      <div className="effects-list">
+        {rows.map(([metric, delta]) => (
+          <span className="effects-row" key={metric}>
+            {labels[metric]}
+            <strong>{delta > 0 ? `+${delta}` : delta}</strong>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 

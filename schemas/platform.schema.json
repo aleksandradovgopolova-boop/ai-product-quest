@@ -9,6 +9,11 @@
     "title": { "type": "string", "minLength": 1 },
     "defaultSeasonId": { "type": "string", "minLength": 1 },
     "defaultChapterId": { "type": "string", "minLength": 1 },
-    "defaultRoute": { "type": "string", "minLength": 1 }
+    "defaultRoute": { "type": "string", "minLength": 1 },
+    "metricLabels": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
   }
 }

@@ -45,6 +45,14 @@ test("Chapter 01 supports keyboard selection, confirmation, and back navigation"
   await page.keyboard.press("Enter");
   await expectScene(page, "Что создаёт хороший продукт?");
 
+  // No answer may be pre-highlighted: a scene must not point at one before the player aims.
+  for (const label of ["Хорошая идея.", "Хорошая команда.", "Я не знаю."]) {
+    await expect(choice(page, label)).not.toHaveAttribute("aria-current", "true");
+  }
+
+  await page.keyboard.press("ArrowDown");
+  await expect(choice(page, "Хорошая идея.")).toHaveAttribute("aria-current", "true");
+
   await page.keyboard.press("ArrowDown");
   await expect(choice(page, "Хорошая команда.")).toHaveAttribute("aria-current", "true");
 
@@ -130,6 +138,12 @@ async function completeChapterOne(page: Page) {
   await choose(page, "Где ошибка продукта?");
   await choose(page, "Принять решение");
   await choose(page, "Остановить отчёт и пометить как непроверенный");
+  // The decision's cost must be visible, not only recorded in the Event Log.
+  await expect(page.locator('[aria-label="Что изменило решение"]')).toContainText("доверие");
+  await expect(page.locator('[aria-label="Что изменило решение"]')).toContainText("+16");
+  await expect(page.locator('[aria-label="Что изменило решение"]')).toContainText("задержка");
+  // The readout must not push the choices under the case rail.
+  await assertViewportIntegrity(page);
   await choose(page, "Продолжить");
   await choose(page, "Сохранить открытие");
   await choose(page, "Записать в Codex");
@@ -144,16 +158,22 @@ async function choose(page: Page, label: string) {
 }
 
 async function advanceAnyInput(page: Page, expectedText: string) {
-  await page.waitForTimeout(320);
-  await page.keyboard.press("Enter");
-  await expectScene(page, expectedText);
-  await page.waitForTimeout(320);
+  await advanceUntil(page, page.getByText(expectedText, { exact: true }));
 }
 
 async function advanceToTitle(page: Page) {
-  await page.waitForTimeout(320);
-  await page.keyboard.press("Enter");
-  await expect(page.locator(".flow-scene-title")).toContainText("Видеть");
+  await advanceUntil(page, page.locator(".flow-scene-title").filter({ hasText: "Видеть" }));
+}
+
+/**
+ * Keyboard input is dropped until React hydrates, and a cold first load can take longer
+ * than any fixed wait, so press until the scene actually changes.
+ */
+async function advanceUntil(page: Page, target: ReturnType<Page["locator"]>) {
+  await expect(async () => {
+    await page.keyboard.press("Enter");
+    await expect(target).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
   await page.waitForTimeout(320);
 }
 

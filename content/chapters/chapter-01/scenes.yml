@@ -53,7 +53,6 @@ scenes:
       - id: product-unknown
         label: "Я не знаю."
         nextSceneId: zero-product-response
-        tone: primary
         setVariables:
           belief: "не знаю"
 
@@ -129,7 +128,6 @@ scenes:
       - id: start-problem
         label: "Искать проблему."
         nextSceneId: zero-hypotheses
-        tone: primary
         setVariables:
           approach: "искать проблему"
       - id: start-people
@@ -226,7 +224,6 @@ scenes:
       - id: continuation
         label: "Она продолжила текст"
         nextSceneId: origin-correct
-        tone: primary
 
   - id: origin-docs
     stepIndex: 1
@@ -336,7 +333,6 @@ scenes:
       - id: sources
         label: "Источников фактов"
         nextSceneId: missing-correct
-        tone: primary
       - id: tone
         label: "Более строгого тона"
         nextSceneId: missing-wrong
@@ -414,7 +410,6 @@ scenes:
       - id: continuation
         label: "Так работает продолжение текста"
         nextSceneId: cause-correct
-        tone: primary
       - id: memory
         label: "Ответ был найден в памяти"
         nextSceneId: cause-wrong
@@ -473,7 +468,6 @@ scenes:
         label: "Остановить отчёт и пометить как непроверенный"
         nextSceneId: decision-correct
         decisionId: quarantine-report
-        tone: primary
         effects:
           quality: 12
           trust: 16
@@ -499,6 +493,7 @@ scenes:
   - id: decision-wrong
     stepIndex: 5
     tone: error
+    showEffects: true
     lines:
       - "Нельзя."
       - "Красивый текст"
@@ -512,6 +507,7 @@ scenes:
   - id: decision-correct
     stepIndex: 5
     tone: success
+    showEffects: true
     lines:
       - "Верно."
       - "Остановить отчёт."

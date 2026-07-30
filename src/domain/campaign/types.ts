@@ -62,6 +62,7 @@ export type Scene = {
   chrome?: SceneChrome;
   presentation?: ScenePresentation;
   advanceMode?: SceneAdvanceMode;
+  showEffects?: boolean;
   lines: string[];
   prompt?: string[];
   evidence?: Evidence[];
@@ -117,6 +118,7 @@ export type PlatformContent = {
   platformId: string;
   title: string;
   defaultCampaignId: string;
+  metricLabels: Record<string, string>;
   seasons: Season[];
   chapters: Chapter[];
   chapterById: Record<string, Chapter>;

@@ -3,4 +3,14 @@ title: AI Product Quest
 defaultSeasonId: season-01
 defaultChapterId: chapter-01
 defaultRoute: /
+# Labels for the system metrics a decision can move. Only metrics listed here can be
+# shown to the player, so a chapter cannot leak an unnamed axis into the readout.
+metricLabels:
+  quality: качество
+  trust: доверие
+  latency: задержка
+  observability: наблюдаемость
+  security: безопасность
+  technicalDebt: технический долг
+  organisationalDebt: организационный долг
 
