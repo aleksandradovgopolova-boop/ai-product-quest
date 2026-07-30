@@ -9,7 +9,8 @@ export default defineConfig({
   },
   reporter: [["list"]],
   testDir: "./tests/e2e",
-  timeout: 30_000,
+  // A full playthrough now walks the Zero prologue plus the case, so it needs more than 30s.
+  timeout: 60_000,
   use: {
     ...devices["Desktop Chrome"],
     baseURL,

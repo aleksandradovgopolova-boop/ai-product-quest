@@ -82,16 +82,17 @@ export function Chapter01View({
             {!isBare || scene.time ? <SystemClock value={scene.time ?? "08:42:17"} /> : null}
 
             <div className="flow-present">
+              {scene.prompt ? <Speaker lines={interpolateLines(scene.prompt, campaign.variables)} shouldReduceMotion={shouldReduceMotion} /> : null}
+              {scene.hypothesis ? <HypothesisReadout text={scene.hypothesis.text} /> : null}
+
               <motion.div animate="show" className="flow-copy" initial="hidden">
                 {lines.map((line, index) => (
                   <RevealedLine delay={lineDelay * index} hasCursor={index === lines.length - 1} key={`${line}-${index}`} text={line} />
                 ))}
               </motion.div>
 
-              {scene.prompt ? <Prompt lines={interpolateLines(scene.prompt, campaign.variables)} shouldReduceMotion={shouldReduceMotion} /> : null}
               {scene.visual === "context" ? <ContextTrace evidence={scene.evidence ?? []} /> : null}
               {scene.visual === "signal" ? <SystemSignal /> : null}
-              {!scene.choices ? <span className="flow-cursor" aria-hidden="true" /> : null}
             </div>
 
             {choices.length > 0 ? (
@@ -149,18 +150,27 @@ function RevealedLine({ delay, hasCursor, text }: { delay: number; hasCursor: bo
   );
 }
 
-function Prompt({ lines, shouldReduceMotion }: { lines: string[]; shouldReduceMotion: boolean }) {
+function Speaker({ lines, shouldReduceMotion }: { lines: string[]; shouldReduceMotion: boolean }) {
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
       className="flow-prompt"
-      initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+      initial={{ opacity: 0, y: shouldReduceMotion ? 0 : -6 }}
       transition={{ duration: shouldReduceMotion ? 0.01 : 0.28 }}
     >
       {lines.map((line) => (
         <span key={line}>{line}</span>
       ))}
     </motion.div>
+  );
+}
+
+function HypothesisReadout({ text }: { text: string }) {
+  return (
+    <div className="flow-hypothesis">
+      <span>РАБОЧАЯ ГИПОТЕЗА</span>
+      <strong>{text}</strong>
+    </div>
   );
 }
 
@@ -174,7 +184,6 @@ function AdvanceHint() {
       transition={{ duration: 0.24 }}
     >
       <span>нажмите любую клавишу / тапните</span>
-      <i aria-hidden="true" />
     </motion.div>
   );
 }

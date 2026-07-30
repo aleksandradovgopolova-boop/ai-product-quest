@@ -60,6 +60,8 @@ export function projectCampaign(content: PlatformContent, eventLog: GameEvent[])
           variables.prediction = prediction;
         }
 
+        Object.assign(variables, readVariables(event.payload.variables));
+
         systemState = applyDecisionEffects(systemState, effects);
         break;
       }
@@ -251,6 +253,22 @@ function calculateXp(events: GameEvent[], unlockedCodexCount: number, artifactCo
 
 function readString(value: unknown, fallback: string | undefined): string {
   return typeof value === "string" ? value : (fallback ?? "");
+}
+
+function readVariables(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const variables: Record<string, string> = {};
+
+  for (const [name, entry] of Object.entries(value)) {
+    if (typeof entry === "string" && entry.length > 0) {
+      variables[name] = entry;
+    }
+  }
+
+  return variables;
 }
 
 function readEffects(value: unknown): DecisionEffects {

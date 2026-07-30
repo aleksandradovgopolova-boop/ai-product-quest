@@ -56,7 +56,9 @@ test("route contract renders distinct platform surfaces", async () => {
 
   const playInitialMarkup = (htmlByRoute.get("/play/chapter-01") ?? "").split('<script id="_R_">')[0] ?? "";
   assert.match(playInitialMarkup, /Подключение\.\.\./);
-  assert.match(playInitialMarkup, /ZERO/);
+  // Boot output belongs to the machine: the speaker label appears only once Zero starts talking.
+  assert.doesNotMatch(playInitialMarkup, /flow-prompt/);
+  assert.doesNotMatch(playInitialMarkup, /ZERO/);
   assert.doesNotMatch(playInitialMarkup, /Система подготовила отчёт/);
   assert.doesNotMatch(playInitialMarkup, /РЕШЕНИЕ/);
   assert.doesNotMatch(playInitialMarkup, /ОЖИДАЕТ ВЫБОР/);

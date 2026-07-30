@@ -21,7 +21,7 @@ events:
       - src/domain/campaign/types.ts
   - name: choice.submitted
     kind: domain
-    payload: [chapterId, sceneId, choiceId, label, nextSceneId, action, prediction, decisionId, effects, systemMessage]
+    payload: [chapterId, sceneId, choiceId, label, nextSceneId, action, prediction, variables, decisionId, effects, systemMessage]
     sources:
       - src/application/chapter-runner/chapterRunner.ts
       - src/domain/campaign/types.ts

@@ -10,9 +10,6 @@ scenes:
       - "Проверка среды..."
       - "Соединение установлено."
       - "..."
-      - "Ты пришла раньше, чем я ожидал."
-    prompt:
-      - "ZERO"
 
   - id: zero-first-contact
     stepIndex: 1
@@ -21,6 +18,7 @@ scenes:
     advanceMode: any-input
     autoNextSceneId: zero-product-question
     lines:
+      - "Ты пришла раньше, чем я ожидал."
       - "Не волнуйся."
       - "Я тоже не люблю первые знакомства."
       - "Обычно в этот момент"
@@ -45,13 +43,19 @@ scenes:
       - id: product-idea
         label: "Хорошая идея."
         nextSceneId: zero-product-response
+        setVariables:
+          belief: "хорошая идея"
       - id: product-team
         label: "Хорошая команда."
         nextSceneId: zero-product-response
+        setVariables:
+          belief: "хорошая команда"
       - id: product-unknown
         label: "Я не знаю."
         nextSceneId: zero-product-response
         tone: primary
+        setVariables:
+          belief: "не знаю"
 
   - id: zero-product-response
     stepIndex: 1
@@ -60,11 +64,12 @@ scenes:
     advanceMode: any-input
     autoNextSceneId: zero-signal
     lines:
-      - "Интересно."
+      - "«{{belief}}»."
+      - "Записал."
       - "У большинства людей"
       - "первый ответ оказывается временным."
-      - "Посмотрим,"
-      - "что останется к концу путешествия."
+      - "Посмотрим, что останется"
+      - "к концу путешествия."
     prompt:
       - "ZERO"
 
@@ -119,16 +124,24 @@ scenes:
       - id: start-idea
         label: "Искать идею."
         nextSceneId: zero-hypotheses
+        setVariables:
+          approach: "искать идею"
       - id: start-problem
         label: "Искать проблему."
         nextSceneId: zero-hypotheses
         tone: primary
+        setVariables:
+          approach: "искать проблему"
       - id: start-people
         label: "Искать людей."
         nextSceneId: zero-hypotheses
+        setVariables:
+          approach: "искать людей"
       - id: start-unknown
         label: "Не знаю."
         nextSceneId: zero-hypotheses
+        setVariables:
+          approach: "не знаю"
 
   - id: zero-hypotheses
     stepIndex: 1
@@ -137,12 +150,11 @@ scenes:
     advanceMode: any-input
     autoNextSceneId: chapter-title
     lines:
-      - "Хорошо."
-      - "Теперь у меня есть две гипотезы"
-      - "о том, как ты мыслишь."
-      - "Не переживай."
-      - "Скорее всего,"
-      - "обе окажутся неверными."
+      - "Две гипотезы о тебе."
+      - "Продукт — это «{{belief}}»."
+      - "Начинать ты будешь так: «{{approach}}»."
+      - "Скорее всего, обе неверны."
+      - "Это нормально."
     prompt:
       - "ZERO"
 
@@ -163,7 +175,7 @@ scenes:
     chrome: bare
     presentation: dialogue
     advanceMode: any-input
-    autoNextSceneId: incident
+    autoNextSceneId: case-open
     lines:
       - "Люди редко ошибаются потому,"
       - "что плохо думают."
@@ -173,6 +185,18 @@ scenes:
       - "Давай попробуем научиться её видеть."
     prompt:
       - "ZERO"
+
+  - id: case-open
+    stepIndex: 1
+    chrome: bare
+    presentation: terminal
+    advanceMode: any-input
+    autoNextSceneId: incident
+    lines:
+      - "Открываю рабочий контур..."
+      - "Дело №01. Непроверенный отчёт."
+      - "Время: 08:42:17."
+      - "Дальше решения принимаешь ты."
 
   - id: incident
     stepIndex: 1

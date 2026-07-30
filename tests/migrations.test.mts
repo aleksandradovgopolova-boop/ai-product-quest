@@ -48,6 +48,51 @@ test("migrates ai-product-quest-flow-v1 into the canonical campaign save", () =>
   assert.equal(state.eventLog.some((event) => event.type === "legacy.save_migrated"), true);
 });
 
+test("projects a saved Event Log written before choice.submitted carried variables", () => {
+  const content = loadGameContent();
+  const storage = new MemoryStorage();
+  const campaignId = "ai-product-quest:campaign:v1";
+  storage.setItem(
+    campaignStorageKey,
+    JSON.stringify({
+      schemaVersion: 1,
+      campaignId,
+      eventLog: [
+        { id: `${campaignId}:event:0001`, sequence: 1, type: "campaign.started", occurredAt: "2026-07-29T10:00:00.000Z", payload: { campaignId } },
+        {
+          id: `${campaignId}:event:0002`,
+          sequence: 2,
+          type: "chapter.started",
+          occurredAt: "2026-07-29T10:00:00.000Z",
+          payload: { chapterId: "chapter-01", sceneId: "zero-boot" },
+        },
+        {
+          id: `${campaignId}:event:0003`,
+          sequence: 3,
+          type: "choice.submitted",
+          occurredAt: "2026-07-29T10:00:00.000Z",
+          payload: {
+            chapterId: "chapter-01",
+            sceneId: "experiment",
+            choiceId: "risk-zone",
+            label: "зоне риска",
+            nextSceneId: "experiment-feedback",
+            prediction: "зоне риска",
+            effects: {},
+          },
+        },
+      ],
+    }),
+  );
+
+  const state = loadCampaignState(content, storage, "2026-07-29T10:10:00.000Z");
+
+  assert.equal(state.currentSceneId, "experiment-feedback");
+  assert.equal(state.variables.prediction, "зоне риска");
+  assert.equal(state.variables.belief, undefined);
+  assert.equal(state.variables.approach, undefined);
+});
+
 test("migrates mission-v2 and progress saves, then removes all legacy keys", () => {
   const content = loadGameContent();
   const storage = new MemoryStorage();
