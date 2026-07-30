@@ -1,0 +1,17 @@
+artifacts:
+  - id: assistant-blueprint
+    chapterId: chapter-01
+    title: "Assistant Blueprint"
+    format: markdown
+    sections:
+      - id: problem
+        title: "Проблема"
+      - id: model
+        title: "Роль модели"
+      - id: context
+        title: "Контекст и источники"
+      - id: decision
+        title: "Принятое решение"
+      - id: risks
+        title: "Риски и проверки"
+

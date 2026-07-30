@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/layout.css";
+@import "./styles/shell.css";
+@import "./styles/game.css";
+@import "./styles/codex.css";
+@import "./styles/dashboard.css";
+@import "./styles/artifacts.css";

@@ -1,0 +1,65 @@
+schema_version: 1
+kind: event-catalog
+events:
+  - name: campaign.started
+    kind: domain
+    payload: [campaignId]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: chapter.started
+    kind: domain
+    payload: [chapterId, sceneId]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: scene.entered
+    kind: domain
+    payload: [chapterId, sceneId]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: choice.submitted
+    kind: domain
+    payload: [chapterId, sceneId, choiceId, label, nextSceneId, action, prediction, decisionId, effects, systemMessage]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: decision.submitted
+    kind: domain
+    payload: [chapterId, sceneId, choiceId, decisionId, label, effects]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: codex.entry_unlocked
+    kind: domain
+    payload: [entryId, chapterId]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: artifact.generated
+    kind: domain
+    payload: [artifactId, artifact]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: legacy.save_migrated
+    kind: domain
+    payload: [fromKey, chapterId, sceneId, prediction, codexEntryIds, legacyMarked]
+    sources:
+      - src/infrastructure/save/saveAdapter.ts
+      - src/domain/campaign/types.ts
+  - name: campaign.reset_completed
+    kind: domain
+    payload: [campaignId]
+    sources:
+      - src/application/chapter-runner/chapterRunner.ts
+      - src/domain/campaign/types.ts
+  - name: campaign.reset
+    kind: domain
+    maps_to: campaign.reset_completed
+    payload: [campaignId]
+    reason: Legacy save compatibility only. Do not emit from new code.
+    sources:
+      - src/engines/projection/projectCampaign.ts
+      - src/domain/campaign/types.ts

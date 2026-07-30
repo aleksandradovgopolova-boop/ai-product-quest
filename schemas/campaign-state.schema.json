@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CampaignState",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "campaignId",
+    "currentChapterId",
+    "currentSceneId",
+    "eventLog",
+    "systemState",
+    "decisions",
+    "unlockedCodexEntryIds",
+    "artifacts",
+    "engineerProfile",
+    "dashboard"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "campaignId": { "type": "string", "minLength": 1 },
+    "currentChapterId": { "type": "string", "minLength": 1 },
+    "currentSceneId": { "type": "string", "minLength": 1 },
+    "eventLog": {
+      "type": "array",
+      "items": { "$ref": "event.schema.json" }
+    },
+    "systemState": { "type": "object" },
+    "decisions": { "type": "object" },
+    "unlockedCodexEntryIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "artifacts": { "type": "array" },
+    "engineerProfile": { "type": "object" },
+    "dashboard": { "type": "object" }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "ai-product-quest",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext dev",
+    "build": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
+    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "test": "npm run build && node --test tests/*.test.mjs && tsx --test tests/*.test.mts",
+    "test:architecture": "tsx --test tests/architecture-boundaries.test.mts",
+    "test:e2e": "playwright test",
+    "test:foundation": "npm run ai:validate && npm run typecheck && npm run lint && npm test && npm run test:e2e",
+    "qa:chapter01:screens": "node scripts/capture-chapter-01-screens.mjs",
+    "ai:onboard": "python3 .ai/managed/tools/ai_ops_cli.py onboard .",
+    "ai:status": "python3 .ai/managed/tools/ai_ops_cli.py status .",
+    "ai:validate": "python3 .ai/managed/validation/validate_ai_ops_child.py . && python3 .ai/managed/validation/validate_ai_first_registry.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_workflows.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_providers.py .ai/managed && python3 .ai/managed/validation/validate_event_catalog.py .ai/project/contracts/events.yaml --scan src/domain/campaign/types.ts,src/application/chapter-runner/chapterRunner.ts,src/engines/projection/projectCampaign.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern test-results --ignore-pattern playwright-report --ignore-pattern .tmp",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "drizzle-orm": "0.45.2",
+    "motion": "^12.43.0",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/workers-types": "^4.20260702.1",
+    "@playwright/test": "^1.62.0",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "react-server-dom-webpack": "19.2.6",
+    "tailwindcss": "4.2.1",
+    "tsx": "^4.23.1",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.0.13",
+    "wrangler": "4.92.0"
+  },
+  "type": "module"
+}

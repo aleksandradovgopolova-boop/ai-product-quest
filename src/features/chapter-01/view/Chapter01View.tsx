@@ -1,0 +1,210 @@
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import type { CampaignState, Chapter, Evidence, PlatformContent, SceneChoice } from "@/src/domain/campaign/types";
+import { interpolateLines } from "@/src/application/chapter-runner/chapterRunner";
+import { cn } from "@/src/lib/utils";
+import { CaseProgress } from "@/src/features/chapter-01/view/CaseProgress";
+import { ChoiceList } from "@/src/features/chapter-01/view/ChoiceList";
+import { CodexOverlay } from "@/src/features/chapter-01/view/CodexOverlay";
+import {
+  HotkeyHint,
+  ProcessingBlock,
+  SystemClock,
+  SystemFrame,
+  SystemMessage,
+  SystemStatus,
+  SystemTopbar,
+} from "@/src/features/chapter-01/view/SystemHud";
+
+export function Chapter01View({
+  activeChoiceIndex,
+  canGoBack,
+  campaign,
+  canAdvanceWithAnyInput,
+  chapter,
+  codexVisible,
+  content,
+  isProcessing,
+  onAdvance,
+  onChoice,
+  onCloseCodex,
+  onFocusChoice,
+  shouldReduceMotion,
+  systemMessage,
+}: {
+  activeChoiceIndex: number;
+  canGoBack: boolean;
+  campaign: CampaignState;
+  canAdvanceWithAnyInput: boolean;
+  chapter: Chapter;
+  codexVisible: boolean;
+  content: PlatformContent;
+  isProcessing: boolean;
+  onAdvance: () => void;
+  onChoice: (choice: SceneChoice) => void;
+  onCloseCodex: () => void;
+  onFocusChoice: (index: number) => void;
+  shouldReduceMotion: boolean;
+  systemMessage?: string;
+}) {
+  const scene = chapter.sceneById[campaign.currentSceneId];
+  const lines = scene ? interpolateLines(scene.lines, campaign.variables) : [];
+  const choices = scene?.choices ?? [];
+  const status = codexVisible ? "ДОСТУП К ПАМЯТИ" : isProcessing ? "ПРОВЕРКА..." : campaign.system.status;
+  const isBare = scene?.chrome === "bare";
+  const presentation = scene?.presentation ?? "system";
+  const sceneTransition = shouldReduceMotion ? { duration: 0.01 } : { duration: 0.42, ease: "easeOut" as const };
+  const lineDelay = shouldReduceMotion ? 0 : 0.08;
+
+  if (!scene) {
+    return null;
+  }
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <main className={cn("flow-shell", isBare && "flow-shell-bare")} onPointerUp={canAdvanceWithAnyInput ? onAdvance : undefined}>
+        <div className="flow-field" aria-hidden="true" />
+        <div className="flow-noise" aria-hidden="true" />
+        {!isBare ? <SystemFrame /> : null}
+        {!isBare ? <SystemTopbar caseShort={`ДЕЛО №${String(chapter.number).padStart(2, "0")}`} caseSummary={chapter.summary} caseTitle={chapter.title} /> : null}
+        {!isBare ? <SystemStatus value={status} /> : null}
+        {!isBare ? <SystemMessage text={systemMessage} /> : null}
+
+        <AnimatePresence mode="wait">
+          <motion.section
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            aria-live="polite"
+            className={cn("flow-scene", `flow-scene-${scene.tone ?? "normal"}`, isBare && "flow-scene-bare", `flow-scene-${presentation}`)}
+            exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -10, filter: shouldReduceMotion ? "blur(0px)" : "blur(8px)" }}
+            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10, filter: shouldReduceMotion ? "blur(0px)" : "blur(8px)" }}
+            key={campaign.currentSceneId}
+            transition={sceneTransition}
+          >
+            {!isBare || scene.time ? <SystemClock value={scene.time ?? "08:42:17"} /> : null}
+
+            <div className="flow-present">
+              <motion.div animate="show" className="flow-copy" initial="hidden">
+                {lines.map((line, index) => (
+                  <RevealedLine delay={lineDelay * index} hasCursor={index === lines.length - 1} key={`${line}-${index}`} text={line} />
+                ))}
+              </motion.div>
+
+              {scene.prompt ? <Prompt lines={interpolateLines(scene.prompt, campaign.variables)} shouldReduceMotion={shouldReduceMotion} /> : null}
+              {scene.visual === "context" ? <ContextTrace evidence={scene.evidence ?? []} /> : null}
+              {scene.visual === "signal" ? <SystemSignal /> : null}
+              {!scene.choices ? <span className="flow-cursor" aria-hidden="true" /> : null}
+            </div>
+
+            {choices.length > 0 ? (
+              <AnimatePresence mode="wait">
+                {isProcessing ? (
+                  <ProcessingBlock key="processing" />
+                ) : (
+                  <ChoiceList
+                    activeChoiceIndex={activeChoiceIndex}
+                    commandLabel={isBare ? "ОТВЕТ" : "РЕШЕНИЕ"}
+                    choices={choices}
+                    onChoice={onChoice}
+                    onFocusChoice={onFocusChoice}
+                    shouldReduceMotion={shouldReduceMotion}
+                  />
+                )}
+              </AnimatePresence>
+            ) : canAdvanceWithAnyInput && presentation !== "title" ? (
+              <AdvanceHint />
+            ) : (
+              <div className="flow-choices flow-choices-empty" aria-hidden="true" />
+            )}
+          </motion.section>
+        </AnimatePresence>
+
+        {!isBare && campaign.unlockedCodexEntryIds.length > 0 ? (
+          <button className="flow-command" onClick={onCloseCodex} type="button">
+            TAB / C / CODEX
+          </button>
+        ) : null}
+
+        {!isBare ? <CaseProgress current={campaign.dashboard.currentStepIndex} steps={chapter.caseSteps} /> : null}
+        {!isBare ? <HotkeyHint canGoBack={canGoBack} choiceCount={choices.length} codexUnlocked={campaign.unlockedCodexEntryIds.length > 0} /> : null}
+
+        <AnimatePresence>
+          {codexVisible ? <CodexOverlay content={content} entryIds={campaign.unlockedCodexEntryIds} onClose={onCloseCodex} /> : null}
+        </AnimatePresence>
+      </main>
+    </MotionConfig>
+  );
+}
+
+function RevealedLine({ delay, hasCursor, text }: { delay: number; hasCursor: boolean; text: string }) {
+  return (
+    <motion.p
+      className="flow-line"
+      variants={{
+        hidden: { opacity: 0, y: 10, filter: "blur(6px)" },
+        show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { delay, duration: 0.36, ease: "easeOut" } },
+      }}
+    >
+      {text}
+      {hasCursor ? <span className="line-cursor" aria-hidden="true" /> : null}
+    </motion.p>
+  );
+}
+
+function Prompt({ lines, shouldReduceMotion }: { lines: string[]; shouldReduceMotion: boolean }) {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      className="flow-prompt"
+      initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+      transition={{ duration: shouldReduceMotion ? 0.01 : 0.28 }}
+    >
+      {lines.map((line) => (
+        <span key={line}>{line}</span>
+      ))}
+    </motion.div>
+  );
+}
+
+function AdvanceHint() {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      className="flow-advance-hint"
+      exit={{ opacity: 0, y: -4 }}
+      initial={{ opacity: 0, y: 4 }}
+      transition={{ duration: 0.24 }}
+    >
+      <span>нажмите любую клавишу / тапните</span>
+      <i aria-hidden="true" />
+    </motion.div>
+  );
+}
+
+function SystemSignal() {
+  return (
+    <motion.div
+      animate={{ opacity: 1, scale: 1 }}
+      className="flow-signal"
+      initial={{ opacity: 0, scale: 0.94 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      aria-hidden="true"
+    >
+      <i />
+    </motion.div>
+  );
+}
+
+function ContextTrace({ evidence }: { evidence: Evidence[] }) {
+  return (
+    <div className="flow-context" aria-label="Контекст, переданный модели">
+      {evidence.map((item, index) => (
+        <div className="context-item" key={item.id}>
+          {index > 0 ? <div className="context-link" /> : null}
+          <div className={cn("context-row", item.missing && "context-row-missing")}>
+            <span>{item.title}</span>
+            <strong>{item.text}</strong>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

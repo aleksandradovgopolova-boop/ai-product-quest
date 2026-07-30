@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Chapter",
+  "type": "object",
+  "required": [
+    "id",
+    "seasonId",
+    "number",
+    "title",
+    "summary",
+    "initialSceneId",
+    "initialSystemState",
+    "caseSteps",
+    "codexEntryIds",
+    "artifactIds",
+    "mechanics"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "seasonId": { "type": "string", "minLength": 1 },
+    "number": { "type": "integer", "minimum": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "initialSceneId": { "type": "string", "minLength": 1 },
+    "initialSystemState": {
+      "type": "object",
+      "required": [
+        "usefulness",
+        "quality",
+        "latency",
+        "cost",
+        "trust",
+        "resilience",
+        "adaptability",
+        "maintainability",
+        "observability",
+        "security",
+        "technicalDebt",
+        "organisationalDebt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "usefulness": { "type": "number" },
+        "quality": { "type": "number" },
+        "latency": { "type": "number" },
+        "cost": { "type": "number" },
+        "trust": { "type": "number" },
+        "resilience": { "type": "number" },
+        "adaptability": { "type": "number" },
+        "maintainability": { "type": "number" },
+        "observability": { "type": "number" },
+        "security": { "type": "number" },
+        "technicalDebt": { "type": "number" },
+        "organisationalDebt": { "type": "number" }
+      }
+    },
+    "caseSteps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "codexEntryIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "artifactIds": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "mechanics": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

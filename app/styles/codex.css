@@ -1,0 +1,66 @@
+.codex-layer {
+  align-items: center;
+  background: rgba(9, 9, 9, 0.9);
+  display: grid;
+  inset: 0;
+  justify-items: center;
+  padding: clamp(24px, 5vw, 72px);
+  position: fixed;
+  z-index: 20;
+}
+
+.codex-text {
+  display: grid;
+  gap: 28px;
+  max-width: 680px;
+  width: min(100%, 680px);
+}
+
+.codex-head {
+  display: grid;
+  gap: 14px;
+}
+
+.codex-head span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.codex-head strong {
+  color: var(--accent);
+  font-size: clamp(2rem, 8vw, 5rem);
+  font-weight: 520;
+}
+
+.codex-list {
+  display: grid;
+  gap: 12px;
+}
+
+.codex-row {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 54px minmax(0, 1fr);
+  padding: 14px 0;
+}
+
+.codex-row p {
+  color: rgba(234, 234, 234, 0.72);
+  grid-column: 2;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.codex-row-open strong {
+  color: var(--foreground);
+}
+
+.codex-close {
+  bottom: clamp(24px, 4vw, 48px);
+  color: var(--accent);
+  cursor: pointer;
+  position: fixed;
+  right: clamp(24px, 4vw, 48px);
+}

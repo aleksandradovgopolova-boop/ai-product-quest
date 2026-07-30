@@ -1,0 +1,10 @@
+.platform-row pre {
+  color: rgba(234, 234, 234, 0.74);
+  font: inherit;
+  grid-column: 1 / -1;
+  line-height: 1.65;
+  margin: 8px 0 0;
+  max-height: 34vh;
+  overflow: auto;
+  white-space: pre-wrap;
+}

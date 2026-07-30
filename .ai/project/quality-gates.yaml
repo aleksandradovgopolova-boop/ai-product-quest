@@ -1,0 +1,36 @@
+schema_version: 1
+kind: project-quality-gates
+project: AI Product Quest
+gates:
+  foundation:
+    command: npm run test:foundation
+    required_for:
+      - architecture
+      - routing
+      - content
+      - persistence
+      - gameplay-ui
+  ai_ops:
+    command: npm run ai:validate
+    required_for:
+      - ai-ops-context
+      - event-catalog
+      - workflow-governance
+  visual_qa:
+    command: npm run qa:chapter01:screens
+    required_for:
+      - chapter-01-polish
+      - gameplay-visual-change
+  content_schema:
+    command: npm test -- tests/content-contract.test.mts
+    required_for:
+      - content
+      - schema
+  browser_e2e:
+    command: npm run test:e2e
+    required_for:
+      - route-contract
+      - keyboard
+      - codex
+      - artifacts
+      - responsive

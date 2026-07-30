@@ -1,0 +1,19 @@
+:root {
+  --background: #090909;
+  --foreground: #eaeaea;
+  --muted: #8a8a8a;
+  --accent: #7fffd4;
+  --line: rgba(234, 234, 234, 0.14);
+  --line-strong: rgba(127, 255, 212, 0.42);
+  --surface: rgba(234, 234, 234, 0.045);
+  --surface-strong: rgba(127, 255, 212, 0.08);
+  --danger: #eaeaea;
+  --system-mono: "IBM Plex Mono", "JetBrains Mono", "Space Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--system-mono);
+  --font-mono: var(--system-mono);
+}

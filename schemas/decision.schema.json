@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Decision",
+  "type": "object",
+  "required": [
+    "id",
+    "context",
+    "options"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string"
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "effects"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "effects": {
+            "type": "object"
+          },
+          "risk": {
+            "type": "string"
+          },
+          "reversibility": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
