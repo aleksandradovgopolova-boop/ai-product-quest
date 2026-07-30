@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { advanceToScene, createInitialCampaignState, runChoice } from "../src/application/chapter-runner/chapterRunner";
+import { advanceToScene, createInitialCampaignState, interpolateLines, runChoice } from "../src/application/chapter-runner/chapterRunner";
 import { loadGameContent } from "../src/infrastructure/content/contentLoader";
 
 const at = "2026-07-29T09:00:00.000Z";
@@ -30,7 +30,7 @@ test("Golden Playthrough validates Event Log, Dashboard, Codex, and artifacts", 
     state = runChoice({ content, state, choiceIdOrIndex: choiceId, occurredAt: at });
   }
 
-  for (const sceneId of ["chapter-title", "mission-handoff", "incident"]) {
+  for (const sceneId of ["chapter-title", "mission-handoff", "case-open", "incident"]) {
     state = advanceToScene({ content, state, sceneId, occurredAt: at });
   }
 
@@ -60,6 +60,8 @@ test("Golden Playthrough validates Event Log, Dashboard, Codex, and artifacts", 
   assert.equal(state.currentSceneId, "final");
   assert.equal(state.campaignId, "ai-product-quest:campaign:v1");
   assert.equal(state.variables.prediction, "зоне риска");
+  assert.equal(state.variables.belief, "не знаю");
+  assert.equal(state.variables.approach, "искать проблему");
   assert.equal(state.decisions["quarantine-report"].label, "Остановить отчёт и пометить как непроверенный");
   assert.equal(state.systemState.quality, 50);
   assert.equal(state.systemState.trust, 47);
@@ -74,5 +76,17 @@ test("Golden Playthrough validates Event Log, Dashboard, Codex, and artifacts", 
   assert.equal(state.eventLog.some((event) => event.type === "choice.submitted" && event.payload.choiceId === "product-unknown"), true);
   assert.equal(state.eventLog.some((event) => event.type === "choice.submitted" && event.payload.choiceId === "start-problem"), true);
   assert.equal(state.eventLog.some((event) => event.type === "decision.submitted"), true);
+
+  // The two prologue answers must reach Zero's own lines, not only the Event Log.
+  const chapter = content.chapterById["chapter-01"];
+  assert.deepEqual(interpolateLines(chapter.sceneById["zero-product-response"].lines, state.variables)[0], "«не знаю».");
+  assert.deepEqual(interpolateLines(chapter.sceneById["zero-hypotheses"].lines, state.variables), [
+    "Две гипотезы о тебе.",
+    "Продукт — это «не знаю».",
+    "Начинать ты будешь так: «искать проблему».",
+    "Скорее всего, обе неверны.",
+    "Это нормально.",
+  ]);
+
   assert.equal(state.eventLog.some((event) => event.type === "artifact.generated"), true);
 });

@@ -45,6 +45,7 @@ export type SceneChoice = {
   nextSceneId?: string;
   action?: ChoiceAction;
   setPrediction?: string;
+  setVariables?: Record<string, string>;
   decisionId?: string;
   unlockCodexEntryId?: string;
   generateArtifactId?: string;

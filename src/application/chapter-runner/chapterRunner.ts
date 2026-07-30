@@ -137,6 +137,7 @@ function appendChoiceEvent(events: GameEvent[], campaignId: string, occurredAt: 
       nextSceneId: choice.nextSceneId,
       action: choice.action,
       prediction: choice.setPrediction,
+      variables: choice.setVariables,
       decisionId: choice.decisionId,
       effects: choice.effects ?? {},
       systemMessage: getSystemMessage(choice, sceneId),
@@ -161,7 +162,7 @@ export function createEvent(
 }
 
 export function interpolateLines(lines: string[], variables: Record<string, string>) {
-  return lines.map((line) => line.replaceAll("{{prediction}}", variables.prediction ?? "..."));
+  return lines.map((line) => line.replaceAll(/\{\{(\w+)\}\}/g, (_match, name: string) => variables[name] ?? "..."));
 }
 
 export function getSystemMessage(choice: SceneChoice, fromSceneId: string) {

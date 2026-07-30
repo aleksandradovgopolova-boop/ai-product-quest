@@ -17,6 +17,7 @@ zero-boot
 → zero-hypotheses
 → chapter-title
 → mission-handoff
+→ case-open
 → incident
 → Chapter 01 investigation
 → final
@@ -100,6 +101,8 @@ npm run qa:chapter01:screens
 
 ## Current Boundaries
 
+- Zero's speaker label belongs to conversation only. Machine output (`zero-boot`, `case-open`) stays unlabeled.
+- Prologue answers are recorded through `setVariables` and must come back in Zero's own lines. Every branch of a question needs `setVariables`, or the recap goes blank.
 - Do not add Chapters 02-06 yet.
 - Keep Chapter 01 as the vertical slice until product acceptance.
 - Keep Zero prologue minimal and non-expository.

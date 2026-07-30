@@ -11,6 +11,21 @@ const storageKeys = [
   "ai-product-quest-mission-v2",
   "ai-product-quest-progress",
 ];
+// The prologue advances on any input; only the last two steps offer choices.
+const prologuePath = [
+  { advance: true, expect: "Ты пришла раньше, чем я ожидал." },
+  { advance: true, expect: "Что создаёт хороший продукт?" },
+  { choose: "Я не знаю." },
+  { advance: true, expect: "Знаешь, что меня всегда удивляет?" },
+  { advance: true, expect: "Поэтому здесь всё устроено" },
+  { choose: "Продолжить" },
+  { choose: "Искать проблему." },
+  { advance: true, expect: "AI Product Quest" },
+  // The title card advances itself; pressing a key here would skip mission-handoff.
+  { await: "Люди редко ошибаются потому," },
+  { advance: true, expect: "Открываю рабочий контур..." },
+  { advance: true, expect: "Система подготовила отчёт." },
+];
 const happyPath = [
   "Продолжить",
   "Она продолжила текст",
@@ -37,7 +52,10 @@ const viewports = [
 await assertServerReady();
 await mkdir(outputDir, { recursive: true });
 
-const browser = await chromium.launch();
+// QA_CHROMIUM_PATH lets a sandbox point at a preinstalled Chromium; unset uses the bundled one.
+const browser = await chromium.launch(
+  process.env.QA_CHROMIUM_PATH ? { executablePath: process.env.QA_CHROMIUM_PATH } : {},
+);
 
 for (const viewport of viewports) {
   const context = await browser.newContext({
@@ -48,6 +66,9 @@ for (const viewport of viewports) {
   const page = await context.newPage();
 
   await resetChapter(page);
+  await screenshot(page, `chapter-01-prologue-${viewport.name}.png`);
+
+  await completePrologue(page);
   await screenshot(page, `chapter-01-start-${viewport.name}.png`);
 
   await completeChapter(page);
@@ -87,7 +108,24 @@ async function resetChapter(page) {
     }
   }, storageKeys);
   await page.reload({ waitUntil: "networkidle" });
-  await page.getByText("Система подготовила отчёт.", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  await page.getByText("Подключение...", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+}
+
+async function completePrologue(page) {
+  for (const step of prologuePath) {
+    if (step.choose) {
+      await choose(page, step.choose);
+      continue;
+    }
+
+    if (step.advance) {
+      await page.waitForTimeout(320);
+      await page.keyboard.press("Enter");
+    }
+
+    const expected = step.expect ?? step.await;
+    await page.getByText(expected, { exact: true }).waitFor({ state: "visible", timeout: 6_000 });
+  }
 }
 
 async function completeChapter(page) {

@@ -69,6 +69,11 @@
                 "nextSceneId": { "type": "string", "minLength": 1 },
                 "action": { "enum": ["artifacts", "codex", "reset"] },
                 "setPrediction": { "type": "string" },
+                "setVariables": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "additionalProperties": { "type": "string" }
+                },
                 "decisionId": { "type": "string" },
                 "unlockCodexEntryId": { "type": "string" },
                 "generateArtifactId": { "type": "string" },

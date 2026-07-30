@@ -180,8 +180,7 @@
 }
 
 .flow-time i,
-.line-cursor,
-.flow-cursor {
+.line-cursor {
   animation: cursor-blink 1.04s steps(1, end) infinite;
   background: var(--accent);
   box-shadow: 0 0 14px rgba(127, 255, 212, 0.48);
@@ -297,11 +296,25 @@
   text-transform: uppercase;
 }
 
-.flow-advance-hint i {
-  animation: cursor-blink 1.04s steps(1, end) infinite;
-  background: var(--accent);
-  height: 0.76em;
-  width: 0.58em;
+.flow-hypothesis {
+  border-left: 1px solid var(--line-strong);
+  display: grid;
+  gap: 8px;
+  max-width: 560px;
+  padding-left: 16px;
+}
+
+.flow-hypothesis span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.flow-hypothesis strong {
+  color: rgba(234, 234, 234, 0.78);
+  font-size: clamp(0.86rem, 1.4vw, 1.02rem);
+  font-weight: 420;
+  line-height: 1.42;
 }
 
 .flow-signal {
@@ -436,7 +449,8 @@
   bottom: clamp(28px, 3vw, 46px);
   left: clamp(48px, 5vw, 76px);
   position: fixed;
-  width: min(76vw, 920px);
+  /* Stops before the keyboard hints so the rail never sits under them. */
+  width: min(58vw, 780px);
 }
 
 .case-progress-meta {
@@ -758,8 +772,8 @@
   }
 
   .flow-scene {
-    gap: clamp(18px, 3.4vh, 34px);
-    top: 54%;
+    gap: clamp(14px, 2.4vh, 24px);
+    top: 52%;
     width: min(80vw, 980px);
   }
 
@@ -789,7 +803,7 @@
   .system-progress {
     bottom: 32px;
     left: 64px;
-    width: min(70vw, 820px);
+    width: min(52vw, 660px);
   }
 
   .case-progress-meta {

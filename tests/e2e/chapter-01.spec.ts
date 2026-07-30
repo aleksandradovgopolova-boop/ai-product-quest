@@ -12,6 +12,7 @@ test("Chapter 01 happy path persists Codex and artifacts across platform routes"
   await completeChapterOne(page);
 
   await expect(page.getByText("Дело закрыто.", { exact: true })).toBeVisible();
+  await assertViewportIntegrity(page);
 
   await page.keyboard.press("c");
   await expect(page.getByRole("dialog", { name: "Codex" })).toBeVisible();
@@ -51,7 +52,7 @@ test("Chapter 01 supports keyboard selection, confirmation, and back navigation"
   await expect(choice(page, "Я не знаю.")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "Интересно.");
+  await expectScene(page, "Записал.");
 
   await page.keyboard.press("Escape");
   await expectScene(page, "Что создаёт хороший продукт?");
@@ -96,20 +97,25 @@ async function resetGame(page: Page) {
   }, appStorageKeys);
   await page.reload();
   await expectScene(page, "Подключение...");
+  // The boot scene is server-rendered, so keyboard input is ignored until React hydrates.
+  await page.waitForTimeout(320);
 }
 
 async function completeChapterOne(page: Page) {
-  await advanceAnyInput(page, "Не волнуйся.");
+  await advanceAnyInput(page, "Ты пришла раньше, чем я ожидал.");
   await advanceAnyInput(page, "Что создаёт хороший продукт?");
   await choose(page, "Я не знаю.");
+  // The prologue answer must come back as Zero's own line, not only as an event.
+  await expectScene(page, "«не знаю».");
   await advanceAnyInput(page, "Знаешь, что меня всегда удивляет?");
   await advanceAnyInput(page, "Поэтому здесь всё устроено");
   await choose(page, "Продолжить");
   await choose(page, "Искать проблему.");
-  await expectScene(page, "Хорошо.");
+  await expectScene(page, "Начинать ты будешь так: «искать проблему».");
   await page.waitForTimeout(320);
   await advanceToTitle(page);
   await advanceAnyInput(page, "Люди редко ошибаются потому,");
+  await advanceAnyInput(page, "Открываю рабочий контур...");
   await advanceAnyInput(page, "Система подготовила отчёт.");
   await choose(page, "Продолжить");
   await choose(page, "Она продолжила текст");
