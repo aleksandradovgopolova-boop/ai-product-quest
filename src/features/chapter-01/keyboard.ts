@@ -55,7 +55,15 @@ export function useChapterKeyboard(params: {
 
       if (params.choices.length > 0 && !params.isProcessing && (event.key === "Enter" || event.key === " ")) {
         event.preventDefault();
-        params.onChoice(params.choices[params.activeChoiceIndex] ?? params.choices[0]);
+
+        // Nothing is selected until the player aims, so the first Enter selects instead of
+        // submitting. Otherwise a blind Enter would always confirm the top row.
+        if (params.activeChoiceIndex < 0) {
+          params.onMove(1);
+          return;
+        }
+
+        params.onChoice(params.choices[params.activeChoiceIndex]);
       }
     }
 

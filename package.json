@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "test:foundation": "npm run ai:validate && npm run typecheck && npm run lint && npm test && npm run test:e2e",
     "qa:chapter01:screens": "node scripts/capture-chapter-01-screens.mjs",
+    "report:session": "tsx scripts/session-report.mts",
     "ai:onboard": "python3 .ai/managed/tools/ai_ops_cli.py onboard .",
     "ai:status": "python3 .ai/managed/tools/ai_ops_cli.py status .",
     "ai:validate": "python3 .ai/managed/validation/validate_ai_ops_child.py . && python3 .ai/managed/validation/validate_ai_first_registry.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_workflows.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_providers.py .ai/managed && python3 .ai/managed/validation/validate_event_catalog.py .ai/project/contracts/events.yaml --scan src/domain/campaign/types.ts,src/application/chapter-runner/chapterRunner.ts,src/engines/projection/projectCampaign.ts",

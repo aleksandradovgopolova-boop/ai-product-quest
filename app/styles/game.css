@@ -332,6 +332,40 @@
   width: 13px;
 }
 
+.flow-effects {
+  border-left: 1px solid var(--line-strong);
+  display: grid;
+  gap: 8px;
+  padding-left: 16px;
+}
+
+.effects-title {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+/* Kept to one wrapping line so the readout never pushes the choices off-screen. */
+.effects-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+}
+
+.effects-row {
+  align-items: baseline;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: clamp(0.82rem, 1.3vw, 0.96rem);
+  gap: 8px;
+}
+
+.effects-row strong {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 460;
+}
+
 .flow-context {
   color: var(--muted);
   display: grid;
@@ -774,7 +808,8 @@
   .flow-scene {
     gap: clamp(14px, 2.4vh, 24px);
     top: 52%;
-    width: min(80vw, 980px);
+    /* Stays clear of the status readout so a tall scene never reaches into it. */
+    width: min(74vw, 900px);
   }
 
   .flow-time {

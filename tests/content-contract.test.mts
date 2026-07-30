@@ -56,6 +56,33 @@ test("every prologue answer records a variable and every placeholder resolves", 
   }
 });
 
+test("a scene that can be answered wrongly must not mark a preferred answer", () => {
+  const content = loadGameContent();
+
+  for (const chapter of content.chapters) {
+    for (const scene of chapter.scenes) {
+      const choices = scene.choices ?? [];
+
+      if (choices.length < 2) {
+        continue;
+      }
+
+      const marked = choices.filter((choice) => choice.tone === "primary").map((choice) => choice.id);
+
+      // A knowledge check: at least one answer leads to an error-toned scene.
+      const hasWrongAnswer = choices.some((choice) => choice.nextSceneId && chapter.sceneById[choice.nextSceneId]?.tone === "error");
+
+      // An opinion poll: every answer leads to the same place, so none of them is better.
+      const routed = choices.filter((choice) => choice.nextSceneId);
+      const singleDestination = routed.length === choices.length && new Set(routed.map((choice) => choice.nextSceneId)).size === 1;
+
+      if (hasWrongAnswer || singleDestination) {
+        assert.deepEqual(marked, [], `${scene.id} marks an answer in a scene without a better answer`);
+      }
+    }
+  }
+});
+
 test("content references are closed and no TypeScript content source remains", async () => {
   const content = loadGameContent();
 

@@ -21,14 +21,15 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
   const [codexVisible, setCodexVisible] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [systemMessage, setSystemMessage] = useState<string>();
-  const [activeChoice, setActiveChoice] = useState({ index: 0, sceneId: chapter.initialSceneId });
+  // -1 means "nothing aimed at yet": a scene must not pre-highlight any answer.
+  const [activeChoice, setActiveChoice] = useState({ index: -1, sceneId: chapter.initialSceneId });
   const processingTimerRef = useRef<number | undefined>(undefined);
   const messageTimerRef = useRef<number | undefined>(undefined);
   const prefersReducedMotion = Boolean(useReducedMotion());
   const shouldReduceMotion = hydrated && prefersReducedMotion;
   const scene = chapter.sceneById[campaign.currentSceneId] ?? chapter.sceneById[chapter.initialSceneId];
   const choices = scene.choices ?? [];
-  const activeChoiceIndex = activeChoice.sceneId === campaign.currentSceneId ? Math.min(activeChoice.index, Math.max(choices.length - 1, 0)) : 0;
+  const activeChoiceIndex = activeChoice.sceneId === campaign.currentSceneId ? Math.min(activeChoice.index, choices.length - 1) : -1;
   const canAdvanceWithAnyInput = scene.advanceMode === "any-input" && Boolean(scene.autoNextSceneId) && !isProcessing;
   const canGoBack = Boolean(findPreviousSceneId(campaign));
   const processingDelay = shouldReduceMotion ? 40 : 680;
@@ -156,7 +157,16 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
     (direction: 1 | -1) => {
       playInterfaceTone("move");
       setActiveChoice((current) => {
-        const currentIndex = current.sceneId === campaign.currentSceneId ? current.index : 0;
+        const currentIndex = current.sceneId === campaign.currentSceneId ? current.index : -1;
+
+        // From "nothing aimed at yet", down lands on the first row and up on the last.
+        if (currentIndex < 0) {
+          return {
+            sceneId: campaign.currentSceneId,
+            index: direction === 1 ? 0 : choices.length - 1,
+          };
+        }
+
         return {
           sceneId: campaign.currentSceneId,
           index: (currentIndex + direction + choices.length) % choices.length,

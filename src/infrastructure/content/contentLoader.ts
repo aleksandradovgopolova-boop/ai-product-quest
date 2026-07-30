@@ -17,6 +17,7 @@ type RawPlatform = {
   defaultSeasonId: string;
   defaultChapterId: string;
   defaultRoute: string;
+  metricLabels?: Record<string, string>;
 };
 
 type RawSeason = {
@@ -71,6 +72,7 @@ export function loadGameContent(): PlatformContent {
     platformId: platform.id,
     title: platform.title,
     defaultCampaignId: `${platform.id}:campaign:v1`,
+    metricLabels: platform.metricLabels ?? {},
     seasons: [season],
     chapters: [chapter],
     chapterById: indexById([chapter]),
