@@ -8,6 +8,13 @@ import type { CampaignState, GameEvent, PlatformContent } from "@/src/domain/cam
  * playthrough needs to answer, using events the game already records. Two signals are
  * deliberately absent because nothing emits them yet — see `notInstrumented`.
  */
+export type DecisionAttempt = {
+  decisionId: string;
+  label: string;
+  effects: Record<string, number>;
+  occurredAt: string;
+};
+
 export type SessionReport = {
   campaignId: string;
   chapterId: string;
@@ -26,7 +33,18 @@ export type SessionReport = {
   retries: number;
   choices: Array<{ sceneId: string; choiceId: string; label: string; occurredAt: string }>;
   wrongAnswers: Array<{ sceneId: string; choiceId: string; label: string }>;
-  decision?: { decisionId: string; label: string; effects: Record<string, number> };
+  /**
+   * Every decision attempt in order. The chapter sends a wrong decision back to the same
+   * scene, so the final attempt is almost always the safe one among players who finish.
+   * Only `first` says whether the player got there unaided.
+   */
+  decision: {
+    first?: DecisionAttempt;
+    final?: DecisionAttempt;
+    attempts: DecisionAttempt[];
+    attemptCount: number;
+    correctedAfterFeedback: boolean;
+  };
   codexUnlocked: string[];
   artifactsGenerated: string[];
   chapterCompleted: boolean;
@@ -93,7 +111,19 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
   const startedAt = events[0]?.occurredAt;
   const lastEventAt = events.at(-1)?.occurredAt;
   const incidentAt = firstSceneEntryAt(sceneEntries, incidentSceneId);
-  const lastDecision = Object.values(state.decisions).at(-1);
+
+  // Read attempts from the log, not from state.decisions: that record is keyed by
+  // decisionId, so a retry overwrites nothing and the order of attempts is lost.
+  const attempts: DecisionAttempt[] = events
+    .filter((event) => event.type === "decision.submitted")
+    .map((event) => ({
+      decisionId: readString(event.payload.decisionId),
+      label: readString(event.payload.label),
+      effects: readEffects(event.payload.effects),
+      occurredAt: event.occurredAt,
+    }));
+  const firstAttempt = attempts[0];
+  const finalAttempt = attempts.at(-1);
 
   return {
     campaignId: state.campaignId,
@@ -113,9 +143,13 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
     retries,
     choices,
     wrongAnswers,
-    decision: lastDecision
-      ? { decisionId: lastDecision.id, label: lastDecision.label, effects: { ...lastDecision.effects } }
-      : undefined,
+    decision: {
+      first: firstAttempt,
+      final: finalAttempt,
+      attempts,
+      attemptCount: attempts.length,
+      correctedAfterFeedback: attempts.length > 1 && firstAttempt?.decisionId !== finalAttempt?.decisionId,
+    },
     codexUnlocked: [...state.unlockedCodexEntryIds],
     artifactsGenerated: state.artifacts.map((artifact) => artifact.id),
     chapterCompleted: seenScenes.has(finalSceneId) && Boolean(getScene(chapter, finalSceneId)),
@@ -141,4 +175,20 @@ function durationMs(from?: string, to?: string) {
 
 function readString(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function readEffects(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const effects: Record<string, number> = {};
+
+  for (const [metric, delta] of Object.entries(value)) {
+    if (typeof delta === "number") {
+      effects[metric] = delta;
+    }
+  }
+
+  return effects;
 }
