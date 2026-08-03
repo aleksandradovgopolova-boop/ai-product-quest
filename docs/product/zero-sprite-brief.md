@@ -16,8 +16,8 @@ fixed in `src/features/chapter-01/zeroState.ts`, and the component reads the she
 | Row order | `idle`, `speaking`, `waiting`, `thinking`, `right`, `wrong`, `decision`, `codex`, `closed` |
 | Weight | under 320 KB — checked by `tests/zero-state.test.mts` |
 
-The subject must stay inside the central ~70% of every cell: the sprite is rendered at 38–76 px, and
-anything touching a cell edge will clip. Anchor the body consistently across frames — a drifting
+The subject must stay inside the central ~70% of every cell: the sprite is rendered at 88–208 px, so
+it reads as a character rather than an icon, and anything touching a cell edge will clip. Anchor the body consistently across frames — a drifting
 baseline reads as jitter at this size.
 
 ## Palette
@@ -30,6 +30,13 @@ scanline and crossed eyes, not by hue.
 - muted: `#8a8a8a`
 - shell interior: near-black, the page behind it is `#090909`
 - background: fully transparent
+
+## Scale
+
+Zero is drawn at character scale, not HUD-icon scale: 208 px on a wide desktop, 150 px on a short
+one, 88–116 px on a phone. At that size the art carries detail — shading, silhouette, a readable
+face — the way the Petdex pets do. The placeholder currently in the repository is deliberately crude
+and will look poor at this size; that is what the real sheet fixes.
 
 ## Character
 
@@ -83,4 +90,4 @@ changed, the only file to touch is `zeroSpriteSheet` in `src/features/chapter-01
 - No extra rows "for later": the component maps rows by index, and an unused row is dead weight.
 - No per-frame PNGs or GIFs in the app — one sheet, one request, one layer.
 - No outline glow baked into the art: glow is the page's job and doubles up badly on a dark ground.
-- No text or numbers inside the sprite — it must stay readable at 38 px.
+- No text or numbers inside the sprite — it must stay readable at 88 px on a phone.

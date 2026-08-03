@@ -4,6 +4,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { zeroSpriteSheet, type ZeroState } from "@/src/features/chapter-01/zeroState";
 import sheet from "./assets/zero-sprite.png";
 
+const sheetUrl = typeof sheet === "string" ? sheet : sheet.src;
+
 /**
  * The sheet is one image: rows are states in `zeroSpriteSheet.states` order, columns are frames.
  * Animation is a stepped background scroll, so a frame change costs no JavaScript and no repaint
@@ -38,7 +40,7 @@ export function ZeroSprite({ speakingMs, state }: { speakingMs: number; state: Z
           "--zero-rows": zeroSpriteSheet.states.length,
           "--zero-row": row < 0 ? 0 : row,
           "--zero-duration": `${zeroSpriteSheet.durationMs}ms`,
-          "--zero-sheet": `url(${sheet})`,
+          "--zero-sheet": `url(${sheetUrl})`,
         } as CSSProperties
       }
     />
