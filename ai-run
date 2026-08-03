@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# ai-run — обёртка AI Ops: пиши задачу СЛОВАМИ, ДВИЖОК делает остальное.
+#   изолированный worktree (main не трогается) -> сильный writer ПО КЛАССУ задачи (сложное -> локальный
+#   claude -p; QUICK -> дешёвый API) -> детерминированные проверки по стеку (build/typecheck/test) ->
+#   baseline-diff -> НЕЗАВИСИМЫЙ ревьюер (deepseek) -> граница strict security #5 (закрывает ЧЕЛОВЕК).
+#
+# Это ЕДИНСТВЕННЫЙ путь к гарантиям кита (0 false-green, evidence на точном SHA, гейты РЕАЛЬНО блокируют).
+# Свободный текст Клоду ("сделай X") гейты НЕ применяет — это просто Клод, не контроль-плейн.
+#
+# Использование:
+#   ./ai-run "<задача словами>" [QUICK|ENGINEERING|PRODUCT]     # по умолчанию ENGINEERING
+#
+# Ключи из env: OPENAI_COMPATIBLE_API_KEY + OPENAI_COMPATIBLE_BASE_URL (deepseek — ревьюер и дешёвый writer).
+# Сильный writer = локальный `claude -p` (без ключа). После ready/#5: security одобряет ЧЕЛОВЕК
+# (ApprovalRecord), затем доставка отдельным шагом (reevaluate + --open-pr).
+set -euo pipefail
+TASK="${1:?использование: ./ai-run \"<задача>\" [QUICK|ENGINEERING|PRODUCT]}"
+TYPE="${2:-ENGINEERING}"
+ENGINE=".ai/managed/tools/ai_ops_run.py"
+[ -f "$ENGINE" ] || { echo "нет $ENGINE — кит не установлен здесь (ai-ops init / ai-ops update)"; exit 1; }
+command -v claude >/dev/null 2>&1 || echo "⚠ локальный 'claude' CLI не найден — сильный writer недоступен, будет money-mode fallback"
+[ -n "${OPENAI_COMPATIBLE_API_KEY:-}" ] || echo "⚠ OPENAI_COMPATIBLE_API_KEY не задан — независимый ревьюер/дешёвый writer недоступны"
+SLUG=$(printf '%s' "$TASK" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '-' | sed 's/^-*//; s/-*$//' | cut -c1-32)
+exec python3 "$ENGINE" run "$TASK" . \
+  --engine pipeline --provider openai-compatible \
+  --signals "{\"task_type\":\"$TYPE\",\"risk\":\"medium\"}" \
+  --execute --author --review --baseline-diff --fix-attempts 2 \
+  --feature "task-${SLUG:-change}"

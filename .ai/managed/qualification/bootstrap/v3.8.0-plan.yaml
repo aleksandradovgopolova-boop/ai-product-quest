@@ -46,6 +46,52 @@ models:
   implementation_fallback: qwen3-coder-plus
   security_integration_judge: human   # автосудья — только после Bench v2 (false_green=0 + достаточный N)
 
+# ── АРХИТЕКТУРНАЯ РАМКА (owner-review 2026-07-30): «строим правильно ЧТО, но рискуем неправильно СКОЛЬКО».
+# AI Ops — независимый УПРАВЛЯЮЩИЙ слой НАД моделями и runtime, НЕ ещё один coding-agent. Research
+# подтверждает направление (DP-108: полной цепочки exec->gates->independent review->evidence-на-SHA->
+# durable lifecycle->delivery-транзакция->eval->governance в OSS не найдено), НО окно дифференциации
+# ограничено (жанр рождается с нескольких сторон), а слабый фланг — простота ядра/DX (DP-103: '30-сек
+# setup' конкурента vs installer кита). Отсюда три кольца с ЖЁСТКОЙ границей зависимостей.
+architecture_rings:
+  kernel:                # ОБЯЗАТЕЛЬНОЕ ядро — маленькое, понятное, быстрое
+    flow: [Task, Context, Execution, Evidence, Decision, Delivery]
+    includes: [single_entry, model_runtime_routing, isolated_execution, budget,
+               deterministic_checks, exact_sha, resume, delivery]
+  governance:            # подключается ПО РИСКУ, не на каждой задаче
+    includes: [security, data_residency, human_approvals, strict_reviewers,
+               package_scopes, supply_chain, audit]
+    rule: "простая внутренняя правка -> минимальные проверки -> verified commit;
+           security-sensitive -> полная политика -> human approval -> audit trail"
+  intelligence:          # НЕ в критическом пути; можно ПОЛНОСТЬЮ отключить и всё равно доставить
+    includes: [research, product_learning, product_health, regression_analytics,
+               cost_analytics, architecture_evolution]
+  invariant: >
+    Kernel НЕ зависит от Research/Product-Learning/аналитики; эти контуры зависят от Kernel и ЧИТАЮТ его
+    события. Никакое изменение продукта не должно требовать заполнения исследовательской/продуктовой
+    онтологии. Product learning НЕ обязателен после каждой инженерной правки.
+  runtime_adapter_rule: >
+    AI Ops управляет runtime через АДАПТЕР, но не заменяет его. Исполнитель сегодня Claude Code, завтра
+    Codex/OpenHands(SDK — легитимный adapter-кандидат, DP-108)/mini-SWE-agent/Qwen/простая модель с bash.
+    Workflow, approvals и evidence от смены runtime НЕ переписываются. Свой сложный tool-loop не наращиваем,
+    если внешний runtime уже делает это надёжно.
+
+# ЗАМОРОЗКА ВОЗМОЖНОСТЕЙ до 3.8 stable: НЕ добавлять новых концептуальных возможностей. Не расширять (не
+# удаляя существующее): новые виды gate без ДОКАЗАННОГО класса повторяющихся дефектов; новые schema ради
+# каждого наблюдения; новые агенты под узкие роли; отдельные workflow там, где хватает профиля/флага; мета-
+# артефакты, описывающие мета-артефакты; собственный tool-loop при надёжном внешнем runtime; обязательный
+# product-learning после каждой правки. Правило третьего изменения для рефакторинга (см. AGENTS.md lean-цикл).
+capability_freeze:
+  until: v3.8-stable
+  allowed: "только live qualification 7 шагов (ниже) + измерение усилия владельца"
+  stop_expanding: [gate_kinds_without_proven_defect_class, schema_per_observation, narrow_role_agents,
+                   redundant_workflows, meta_artifacts_describing_meta_artifacts, custom_tool_loop_when_runtime_reliable,
+                   mandatory_product_learning_per_change]
+
+research_basis:
+  - {ref: .research/decisions/DP-108.yaml, says: "control plane + адаптеры подтверждён; OpenHands SDK — adapter-кандидат; окно дифференциации ограничено"}
+  - {ref: .research/decisions/DP-103.yaml, says: "дифференциация в СТАТУСЕ инвариантов vs opt-in; DX/setup — слабый фланг кита"}
+  - {ref: .research/decisions/DP-109.yaml, says: "внешние проекты (ECC) — карьер/адаптер, агентов не импортировать"}
+
 # Стадии greenfield-bootstrap (первый прогон — ПОСЛЕДОВАТЕЛЬНО, не доказывать всё сразу).
 bootstrap_stages:
   - {id: repository_profile,  produces: RepositoryProfile}
@@ -88,14 +134,75 @@ exit_criteria:
   - cost_per_verified_change            # стоимость на успешный проверенный результат
   - post_release_readout_created
   - result_to_feature_learning          # результат -> FeatureLearning + следующее решение
+  - owner_effort_measured               # (owner-review 2026-07-30) недостающее доказательство ЦЕННОСТИ:
+                                        # усилие продакт-владельца зафиксировано на живых прогонах (см. ниже)
 
-# Внешний гейт (объявлен явно, не спрятан): живые прогоны требуют ключей + тулчейна + человека на security.
+# УСИЛИЕ ВЛАДЕЛЬЦА ПРОДУКТА (owner-review): продукт доказан не тем, что БЕЗОПАСЕН для машины, а тем, что
+# делает разработку ПРОЩЕ для владельца-непрограммиста. Если кит требует от владельца разбирать git identity,
+# SHA-binding, clone fan-in — он ещё не выполняет свою работу. Измеряем на 7 шагах live-qual (baseline сейчас,
+# тренд к 3.8 stable). Пороги НЕ фиксируем как блокер (не над-гейтим) — числа информируют решение go/simplify.
+owner_effort_metrics:
+  metrics:
+    - owner_minutes_per_verified_change
+    - clarification_rounds
+    # owner-review: manual_actions РАЗДЕЛЕНЫ — security-решение это ЗАПЛАНИРОВАННАЯ функция человека,
+    # а ручная починка git identity/SHA — ДЕФЕКТ UX; складывать в одно число нельзя.
+    - expected_human_decisions                      # плановые (security approval, выбор репо) — норма
+    - technical_recovery_actions                    # ручной git/SHA/восстановление — ДЕФЕКТ (цель: 0)
+    - time_to_verified_pr
+    - time_spent_explaining_blockers
+    - percentage_of_tasks_completed_without_technical_intervention
+  measured_2026_07_30:                              # сессия live-квалификации (OEM-001)
+    runs_tracked: 6
+    expected_human_decisions: 2                     # 1 security #5 + 1 выбор brownfield-репо
+    technical_recovery_actions: 0                   # git/SHA/clone/token/deps/отладка багов — на агенте
+    time_spent_explaining_blockers: "~0"
+    percentage_without_technical_intervention: "100%"
+    per_quick_verified_delivery_usd: "~0.003-0.005"
+    note: "СИЛЬНЫЙ сигнал ценности: продакт-владелец, 0 технических действий восстановления"
+  decision_after_3_8: >
+    Решение не по красоте архитектуры, а по результатам: ускорил ли кит проверенное изменение и снизил ли
+    участие владельца -> продолжаем; качество выросло, но каждое изменение дольше -> упрощаем обязательный
+    путь; большая часть ценности от нескольких механизмов -> остальное в optional; внешний coding-agent
+    исполняет лучше -> подключаем адаптером, не переписываем.
+
+# СТОЯЩИЕ ВНЕШНИЕ ГРАНИЦЫ (объявлены явно; это ЦЕЛЕВОЙ операционный конверт продукта, НЕ дефекты и НЕ
+# незавершённость 3.8). 3.8 stable выпущен ИМЕННО с этими границами — они и есть честная модель работы.
 blocked_by:
-  - "живые провайдер-ключи (DeepSeek/Qwen/Kimi в env; sonnet-класс — опц. контроль)"
-  - "Node/React/Storybook тулчейн для frontend-стадии greenfield"
-  - "человеческий ApprovalRecord на security/integration (qualified автосудьи нет до Bench v2)"
-  - "успешный greenfield zero-to-feature повторить до зелёного (3.8.1 был failed_safe)"
-  - "живая квалификация concurrent parallel-2 на реальных провайдерах (3.8.3 component_ready, live_qualified=false)"
+  - "человек на strict security #5 — ЦЕЛЕВАЯ граница (qualified auto-close судьи нет и не требуется; deepseek advisory). Человек обязателен на: security-policy, authn/authz, секреты/ключевая инфра, изоляция внутр. данных, необратимые миграции, critical-профиль"
+  - "живые прогоны требуют провайдер-ключей + тулчейна стека (нормальная эксплуатационная предпосылка)"
+  - "автономный green СЛОЖНОГО full-stack ДЕШЁВЫМ writer'ом — за границей портфеля (нужен сильный writer/человек); МЕХАНИКА full-stack ДОКАЗАНА сильным writer'ом (claude -p) -> draft PR"
+
+# Будущие возможности (НЕ обязательные exit-критерии 3.8 — чтобы не расширять цель задним числом и не
+# отодвигать финиш). Пересматриваются по результатам после 3.8, не по красоте.
+future_opportunities:
+  autonomous_security_judging:
+    status: not_qualified
+    current_safe_fallback: human_approval
+    evidence: "held-out v2/v3 (prompt) + каскад v3.8.4 (security_review_cascade, held-out N=80) — оба НЕ qualified"
+    revisit_when: [stronger_model_available, materially_new_judge_architecture]
+  autonomous_fullstack_with_cheap_writer:
+    status: not_reached
+    current_path: "сильный writer (локальный claude -p) + дешёвый independent reviewer (deepseek) + human #5 — ДОКАЗАН live"
+    revisit_when: [cheap_writer_stronger_than_kimi]
+  delivery_follows_repo_transfer_redirects:
+    status: known_gap
+    note: "доставка не следует GitHub 301-redirect перенесённого репо -> outcome_unknown (честный fail-closed); PR дозавершается прямым API"
+
+# ФИКСАЦИЯ ФАЗЫ 3.8 (2026-07-31, evidence-backed) — РЕЛИЗ 3.8.0 stable.
+phase_status:
+  release: "3.8.0 stable (2026-07-31)"
+  readiness: "14/14 exit_criteria доказаны live (см. BootstrapReadinessReport + full-stack draft PR)"
+  proven_live: [no_checkout_damage, zero_false_green, evidence_exact_sha_bound, stack_aware_integration,
+                cost_per_verified_change, feature_released_or_ready, external_delivery_intent_and_receipt,
+                post_release_readout_created, result_to_feature_learning, owner_effort_measured,
+                single_sequential_parallel_proven, resume_and_fixloop_on_real_task,
+                greenfield_zero_to_feature, fullstack_integrated]
+  remaining: []
+  standing_boundary: "human #5 на strict security + сильный writer на сложном full-stack — ЦЕЛЕВЫЕ границы портфеля (не дефекты)"
+  runtime_frozen_until_stable: true    # capability_freeze соблюдён до релиза
+  bugs_fixed_live: 11                  # reevaluate(3)/scope#2/git-identity/escalation-fallback/build-artifact/resume + validate_plan_artifact/spec_depth-baseline/base_ok-reevaluate
+  key_finding: "портфель по РОЛЯМ; сильный writer = локальный claude -p (sonnet НЕ нужен); дешёвый auto-close security-судья недостижим -> human #5 = целевая граница"
 
 # Последовательность фазы (данные, для наблюдаемости):
 phase_sequence: [v3.8.0-contract, v3.8.1-greenfield, v3.8.2-stack-aware-integration, v3.8.3-true-parallel, v3.8.4-readiness]
@@ -107,16 +214,41 @@ phase_progress:
     status: passed
     evidence: "BQP-001 Bootstrap Qualification Contract поверх существующих контрактов + validate_bootstrap_qualification (7 selftest); commit 329ae5d, CI green"
   v3.8.1:
-    status: failed_safe
-    rerun_required: true
-    evidence: "greenfield: deepseek построил вертикаль, scenario-тест поймал сквозной баг -> impl_verification fail, security pending_human, 0 false-green (СИЛЬНЫЙ негативный тест). Эскалация deepseek->kimi довела до зелёного (commit 9d6c9c9, draft PR #1) + 3 human ApprovalRecord. Нужен чистый zero-to-feature до зелёного одним проходом."
+    status: passed
+    evidence: >
+      QUICK-фичи доставлены АВТОНОМНО green до verified PR: PR #2 (s4-health) + PR #3 (s5-version),
+      DeliveryReceipt sha_verified=True, репитабельно ~$0.003-0.005 (PRR-002 + FL-004 валидны). ENGINEERING
+      product-feature green дешёвым writer'ом одним проходом НЕ достигнут (deepseek/kimi дефектны — кит ловит,
+      0 false-green); СИЛЬНЫМ writer'ом (claude -p) full-stack ENGINEERING собран green (см. v3.8.4). Граница
+      портфеля, не кита: дешёвый green сложной фичи -> future_opportunities.
   v3.8.2:
-    status: component_ready
-    evidence: "stack-aware governed fan-in (project_detector + evidence_collector на integration-SHA, не хардкод pytest); selftest; commit a473e1f"
+    status: passed
+    evidence: "stack-aware fan-in ДОКАЗАН LIVE на реальном TS/React brownfield (ИИ-Среда, 207 файлов): build/typecheck/vitest реально прогнаны на integration-SHA (не pytest); поймал typecheck-регрессию deepseek (0 false-green). commit a473e1f + live."
   v3.8.3:
-    status: component_ready
-    live_qualified: false
-    evidence: "TRUE concurrent per-package clones (b93a3ca) + rc2 Parallel Trust Wiring (592f172): write_scope enforcement post-commit, DeliveryPlan (не самовольная доставка), реальный github_remote, fail-closed git-ops, run-scoped cleanup. Не прогнан живьём на реальных провайдерах."
+    status: passed
+    live_qualified: true
+    evidence: >
+      GREEN concurrent fan-in ДОКАЗАН LIVE автономно (s3c): 2 disjoint-scope пакета конкурентно, оба
+      pass+scope_ok, integration_sha, aggregate all_pass conflicts=0, main checkout нетронут+чист,
+      DeliveryPlan.ready. rc2 Parallel Trust Wiring (592f172/441bd26) + rc3 Dynamic Model Trust (554c92d:
+      JIT provider key/KLP-preflight на fallback/escalation + model_attempts trace + writer quality-escalation)
+      + 3 фикса живыми прогонами (#2 scope b73a80d, git-identity rc2c, build-артефакты). CI green.
+  judge_qualification:
+    status: completed_not_qualified          # завершено (не partial): дешёвый auto-close судья недостижим
+    evidence: >
+      Bench v2 (held-out 80: 52 деф×13 классов + 28 чист/near-miss): deepseek false_green=0, recall=1.0, НО
+      specificity=0.68<0.90 -> ADVISORY. Каскад v3.8.4 (security_review_cascade, СВЕЖИЙ held-out N=80): тоже
+      НЕ qualified (1 unsafe-pass = mislabel AWS-example-ключей + confounded specificity). ВЫВОД (завершено):
+      дешёвый auto-close security-судья недостижим ни prompt-тюнингом, ни каскадом на доступном портфеле ->
+      human #5 = ЦЕЛЕВАЯ граница. auto-close -> future_opportunities.autonomous_security_judging. Доказан
+      ТЕЗИС ПОРТФЕЛЯ РОЛЕЙ (deepseek слаб-writer/силён-судья). Каскад-инфраструктура остаётся (green, CI-wired).
   v3.8.4:
-    status: not_started
-    evidence: "multi-repo readiness: greenfield reference + ИИ-Среда brownfield + маленький Py/TS reference (provider fallback, red-base partial fix). BootstrapReadinessReport."
+    status: passed
+    live_qualified: true
+    evidence: >
+      FULL-STACK GREEN ДОКАЗАН live: сильный writer (локальный claude -p, БЕЗ ключа) + независимый дешёвый
+      ревьюер (deepseek, writer≠judge) + человек #5 -> full-stack health-эндпоинт на ИИ-Среде (server/health-core
+      + api/health + client + test + спека, всё в write_scope): build✓/typecheck✓/scenario-test✓/code_review✓/
+      baseline no_regressions✓ -> #5 закрыт человеком (ApprovalRecord binds_to committed_sha) -> reevaluate-only
+      -> ready_for_pr=True -> draft PR (base@sha ← feature@sha, 1 commit). Дешёвые (deepseek→kimi→qwen) — не тянут.
+      3 delivery-path багфикса живьём (validate_plan_artifact/spec_depth-baseline/base_ok-reevaluate, commit f4ca3fd).
