@@ -668,6 +668,39 @@ def _authoring_specs():
     }
 
 
+def _reevaluate_artifact_evidence(work_root, wid, gate_ids):
+    """v3.8.3 reevaluate: пере-вывести evidence артефакт-гейтов из СУЩЕСТВУЮЩИХ на диске артефактов
+    (БЕЗ модели) — SHA не менялся, форма уже подтверждена оригинальным прогоном. requirements/
+    plan_readiness читаются из .ai/runplan/<wid>/ и валидируются детерминированно; specification —
+    реальный openspec validate --strict. Так переоценка после человеко-approval не теряет уже
+    доказанные гейты (клоббер run-report не влияет). -> {gate_id: evidence}."""
+    import yaml as _yaml
+    ev = {}
+    out_dir = Path(work_root) / ".ai" / "runplan" / wid
+    for gid, (fname, mod, _kind, _shape) in _authoring_specs().items():
+        if gid not in gate_ids:
+            continue
+        p = out_dir / fname
+        if not p.is_file():
+            continue
+        try:
+            data = _yaml.safe_load(p.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and not mod.check(data):
+                ev[gid] = {"status": "pass", "provided": mod.provided_evidence(data),
+                           "evidence": [f".ai/runplan/{wid}/{fname} — форма подтверждена (reevaluate, SHA стабилен)"]}
+        except Exception:  # noqa: BLE001
+            pass
+    if "specification" in gate_ids:
+        try:
+            _avail, _ok, _ = _openspec_validate(work_root, wid)
+            if _avail and _ok:
+                ev["specification"] = {"status": "pass", "provided": ["openspec_valid"],
+                                       "evidence": ["openspec validate --strict (reevaluate, SHA стабилен)"]}
+        except Exception:  # noqa: BLE001
+            pass
+    return ev
+
+
 def _author_with_retry(author_proposer, base_prompt, check_fn, bud, attempts=3):
     """v3.0-rc14 (finding живой квалификации kimi): author-вызов ретраится при невалидном/пустом
     артефакте. Флаки reasoning-провайдер (kimi) на части вызовов отдаёт пустой/битый YAML -> артефакт-
@@ -1412,6 +1445,29 @@ def run_pipeline(task, signals, child_root, proposer, policy=None, budget=None,
     for _gid, _ev in (authored_ev or {}).items():
         gate_ev.setdefault(_gid, _ev)
 
+    # v3.8.3 reevaluate-only: SHA НЕ менялся -> артефакт-гейты (requirements/specification/plan_readiness)
+    # пере-выводим ДЕТЕРМИНИРОВАННО из существующих на диске артефактов (без модели, без чтения
+    # клоббер-подверженного run-report). code_review переподтверждается ревью на том же SHA (--review).
+    # security НЕ сеем — переоценим ниже с человеко-approval. setdefault -> не перетираем свежий
+    # impl_verification из evidence_collector.
+    if reevaluate_only:
+        # (1) primary: персистированное build-evidence по committed_sha (включая model-вердикт code_review) —
+        # НЕ ре-ревьюим (недетерминизм) и не зависим от клоббер-подверженного run-report;
+        # (2) fallback: детерминированный re-derive артефакт-гейтов из существующих на диске артефактов.
+        try:
+            import json as _json
+            _rep = Path(child_root) / ".ai" / f"reevaluate-evidence-{wid}.json"
+            if _rep.is_file():
+                _rj = _json.loads(_rep.read_text(encoding="utf-8"))
+                if _rj.get("sha") == committed_sha:
+                    for _gid, _ev in (_rj.get("gate_ev") or {}).items():
+                        if _gid != "security":
+                            gate_ev.setdefault(_gid, _ev)
+        except Exception:  # noqa: BLE001
+            pass
+        for _gid, _ev in _reevaluate_artifact_evidence(work_root, wid, plan["gates"]).items():
+            gate_ev.setdefault(_gid, _ev)
+
     # 6c. «умное ослабление» (v2.61): инструмента нет в подтверждённом стеке -> флаг освобождается
     #     (build/lint/typecheck). tests — особый случай: по умолчанию тоже освобождаем + громкий
     #     warn; policy allow_missing_tests=False эскалирует до блока (untested -> not ready).
@@ -1555,9 +1611,13 @@ def run_pipeline(task, signals, child_root, proposer, policy=None, budget=None,
             _sec_recs = _appr_sec.load_approvals(child_root, wid)
             _sec_now, _sec_ph = _appr_sec._now_iso(), _appr_sec.plan_binding_hash(child_root, wid)
             _sec_domains = {"security", "security_review", *security_pack_result["needs_review"]}
-            _human_closed = any(r.get("approval") in _sec_domains
-                                and _appr_sec._record_valid(r, now=_sec_now, plan_hash=_sec_ph, strict=True)
-                                for r in _sec_recs)
+            # v3.8.3: одобрение валидно, если привязано к ревизии плана (_sec_ph) ЛИБО к ТОЧНОМУ committed_sha.
+            # SHA-binding стабилен при reevaluate (SHA не меняется, даже если run() перезаписал run-plan.yaml)
+            # и семантически сильнее: человек одобряет КОНКРЕТНЫЙ код, а не ревизию плана (как aggregate #4b).
+            def _appr_valid_here(r):
+                return (_appr_sec._record_valid(r, now=_sec_now, plan_hash=_sec_ph, strict=True)
+                        or (committed_sha and _appr_sec._record_valid(r, now=_sec_now, plan_hash=committed_sha, strict=True)))
+            _human_closed = any(r.get("approval") in _sec_domains and _appr_valid_here(r) for r in _sec_recs)
             if _human_closed:
                 gate_ev["security"] = {"status": "pass",
                                        "provided": ["no_secrets", "no_injection_surface", "deps_approved"],
@@ -1649,6 +1709,22 @@ def run_pipeline(task, signals, child_root, proposer, policy=None, budget=None,
                                    gate_ids=_gate_ids, tested_revision=committed_sha,
                                    signals=signals, not_applicable=not_applicable)
 
+    # v3.8.3: персистим ПРОЙДЕННОЕ gate-evidence билда (кроме security) по committed_sha в worktree/.ai —
+    # чтобы последующий reevaluate (после человеко-approval) переиспользовал model-вердикт code_review и
+    # артефакт-гейты БЕЗ ре-ревью (недетерминизм) и без зависимости от клоббер-подверженного run-report.
+    # Только non-reevaluate билд с коммитом (reevaluate не перетирает источник).
+    if committed_sha and not reevaluate_only and worktree_rel is not None:
+        try:
+            import json as _json
+            _passed = {gid: ev for gid, ev in gate_ev.items()
+                       if gid != "security" and isinstance(ev, dict) and ev.get("status") == "pass"}
+            # пишем в child_root/.ai (репо-корень), ВНЕ worktree-дерева -> не грязним committed_sha
+            (Path(child_root) / ".ai").mkdir(parents=True, exist_ok=True)
+            (Path(child_root) / ".ai" / f"reevaluate-evidence-{wid}.json").write_text(
+                _json.dumps({"sha": committed_sha, "gate_ev": _passed}, ensure_ascii=False), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            pass
+
     # честность evidence: ревизия сбора совпадает с зафиксированным SHA (если коммитили)
     evidence_revision = coll.get("revision")
     revision_matches = (committed_sha is not None and evidence_revision == committed_sha)
@@ -1667,10 +1743,19 @@ def run_pipeline(task, signals, child_root, proposer, policy=None, budget=None,
         "value": "discovery_completeness", "success_metrics": "analytics_readiness",
     }
     _unmet = set(gates["unmet_gates"])
+    # v3.8.4 (finding живой full-stack квалификации): spec_depth ДОЛЖЕН быть baseline-осведомлён.
+    # verification_strategy маппится на implementation_verification; в baseline-diff режиме этот гейт
+    # baseline-освобождён (красная база не блокирует — см. other_blocking_unmet ниже). Раньше spec_depth
+    # брал СЫРОЙ _unmet -> предсуществующий провал базы (напр. flaky date-тест) блокировал ready через
+    # verification_strategy, ОБХОДЯ baseline-diff. Теперь: если правка НЕ внесла новых регрессий, гейт
+    # implementation_verification не считается незакрытым и для spec_depth (реальная регрессия ПРАВКИ —
+    # по-прежнему блокирует, т.к. тогда _diff_checks вернёт непустые regressions).
+    _iv_baseline_exempt = bool(baseline_diff) and not _diff_checks(baseline_checks, coll["checks"])[0]
+    _unmet_for_spec = (_unmet - {"implementation_verification"}) if _iv_baseline_exempt else _unmet
     _level = _sl.classify(signals)["level"]
     _req_sections = set(_sl.required_sections(_level))
     spec_depth_missing = sorted({s for s, g in _SECTION_GATE.items()
-                                 if s in _req_sections and g in plan["gates"] and g in _unmet})
+                                 if s in _req_sections and g in plan["gates"] and g in _unmet_for_spec})
     spec_depth_ok = not spec_depth_missing
 
     # v2.110 Real Spec-First enforcement: если для этого WorkItem СУЩЕСТВУЕТ явный spec-артефакт
@@ -1753,7 +1838,11 @@ def run_pipeline(task, signals, child_root, proposer, policy=None, budget=None,
                                 "error": str(_e)}
     approvals_cover_ok = bool(approval_recheck.get("ok"))
 
-    base_ok = (loop["stopped"] == "done") and (committed_sha is not None) \
+    # v3.8.4 (finding живой квалификации): reevaluate-only — легитимно завершённый прогон (0 шагов,
+    # переоценка существующего committed HEAD после человеко-одобрения). Раньше base_ok требовал
+    # stopped=="done" -> reevaluate НИКОГДА не мог достичь ready_for_pr (delivery-after-approval путь был
+    # недостижим). Остальные условия base_ok (committed_sha/revision/tree/env/approvals) по-прежнему строги.
+    base_ok = (loop["stopped"] in ("done", "reevaluate-only")) and (committed_sha is not None) \
         and revision_matches and tree_ok and env_qualified and approvals_cover_ok
     if baseline_diff:
         # критерий «no-regressions»: implementation_verification baseline-осведомлён (красная база

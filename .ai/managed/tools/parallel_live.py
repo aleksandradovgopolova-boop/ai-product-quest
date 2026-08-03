@@ -74,21 +74,35 @@ def _glob_match(path, pat):
     return fnmatch.fnmatch(path, pat) or path == pat
 
 
-def _changed_files(root, base_sha):
-    """Файлы, изменённые пакетом относительно base_sha (для post-commit scope-проверки)."""
-    r = _git(root, "diff", "--name-only", f"{base_sha}...HEAD", check=False)
+def _changed_files(root, base_sha, head="HEAD"):
+    """Файлы, изменённые между base_sha и head (для post-commit scope-проверки). head по умолчанию HEAD,
+    но concurrent-путь ОБЯЗАН передавать РЕАЛЬНЫЙ package-SHA: ai_ops_run коммитит в ВЛОЖЕННЫЙ
+    worktree-branch внутри клона, а HEAD самого клона остаётся на base -> diff base...HEAD был бы пуст
+    (scope-проверка no-op). Диффим base...<package_sha>."""
+    r = _git(root, "diff", "--name-only", f"{base_sha}...{head}", check=False)
     if r.returncode != 0:
-        r = _git(root, "diff", "--name-only", base_sha, "HEAD", check=False)
+        r = _git(root, "diff", "--name-only", base_sha, head, check=False)
     return [ln.strip() for ln in (r.stdout or "").splitlines() if ln.strip()]
 
 
+def _is_build_artifact(f):
+    """Инкрементальные build-артефакты (не код модели): setuptools egg-info, кэши, dist/build, lock-файлы,
+    node_modules. Создаются install/сборкой, не писателем -> НЕ считаются нарушением write_scope."""
+    return (".egg-info/" in f or "__pycache__/" in f or f.endswith((".pyc", ".pyo"))
+            or f.startswith(("dist/", "build/", "node_modules/", ".pytest_cache/", ".mypy_cache/", ".ruff_cache/"))
+            or "/dist/" in f or "/build/" in f or "/node_modules/" in f
+            or f.endswith((".lock",)) or f == "package-lock.json" or f.endswith("/package-lock.json"))
+
+
 def _scope_ok(changed, write_scope):
-    """#2 post-commit: changed_files ⊆ write_scope. Инфра-пути (.ai/openspec/features) разрешены.
-    write_scope пуст -> не форсим здесь (границу объявляет план). -> (ok, outside_files)."""
+    """#2 post-commit: changed_files ⊆ write_scope. Инфра-пути (.ai/openspec/features) и инкрементальные
+    build-артефакты (egg-info/кэши/lock/node_modules) разрешены. write_scope пуст -> не форсим здесь
+    (границу объявляет план). -> (ok, outside_files)."""
     if not write_scope:
         return True, []
     outside = [f for f in changed
-               if not f.startswith(_INFRA_PREFIXES) and not any(_glob_match(f, p) for p in write_scope)]
+               if not f.startswith(_INFRA_PREFIXES) and not _is_build_artifact(f)
+               and not any(_glob_match(f, p) for p in write_scope)]
     return (not outside), outside
 
 
@@ -251,8 +265,8 @@ def make_isolated_package_runner(child_root, base_sha, task_map, signals, run_fn
         # #2 post-commit: заявленный write_scope принуждается на РЕАЛЬНОМ диффе (клон изолирует физически,
         # но не запрещает модели тронуть лишний файл — принуждаем декларацию плана исполнением).
         if res.get("sha") and pkg.get("write_scope"):
-            changed = _changed_files(cpath, base_sha)
-            sok, outside = _scope_ok(changed, pkg["write_scope"])
+            changed = _changed_files(cpath, base_sha, res["sha"])   # #2-fix: диффим РЕАЛЬНЫЙ package-SHA,
+            sok, outside = _scope_ok(changed, pkg["write_scope"])   # не HEAD клона (ai_ops_run — вложенный worktree)
             res["scope_check"] = {"write_scope": pkg["write_scope"], "changed": len(changed),
                                   "outside": outside[:20], "ok": sok}
             if not sok:
@@ -494,13 +508,15 @@ def selftest():
             expect("v3.8.3: без pytest — структура concurrent fan-in цела", agg_c.get("stack_aware") is True)
 
         # v3.8.3-rc2 #2 POST-COMMIT SCOPE: пакет пишет ФАЙЛ ВНЕ своего write_scope -> пакет FAIL (не в fan-in).
-        def rogue_run(task, sig, root, **kw):  # мок: коммитит файл вне заявленного write_scope
+        def rogue_run(task, sig, root, **kw):  # мок ai_ops_run: коммит в ВЛОЖЕННУЮ ветку, HEAD клона -> base
             pid = kw["feature"]
-            _git(root, "config", "user.email", "t@t"); _git(root, "config", "user.name", "t")  # см. commit_run
+            _git(root, "config", "user.email", "t@t"); _git(root, "config", "user.name", "t")
             _git(root, "checkout", "-q", "-B", f"ai-ops/{pid}", check=False)
             (Path(root) / "OUTSIDE_scope.py").write_text("x=1\n", encoding="utf-8")  # не совпадает с cc.py
             _git(root, "add", "-A"); _git(root, "commit", "-qm", f"rogue {pid}", check=False)
-            return {"ready_for_pr": True, "commit": {"sha": _git(root, "rev-parse", "HEAD").stdout.strip()}}
+            _sha = _git(root, "rev-parse", "HEAD").stdout.strip()
+            _git(root, "checkout", "-q", base3, check=False)   # клон HEAD обратно на base (как оставляет ai_ops_run)
+            return {"ready_for_pr": True, "commit": {"sha": _sha}}   # #2-fix guard: чек ОБЯЗАН читать этот sha, не HEAD
         with tempfile.TemporaryDirectory() as cdir2:
             _rrunner = make_isolated_package_runner(td3, base3, {"cc": "t"}, {"task_type": "QUICK"},
                                                     rogue_run, cdir2, {})
@@ -530,10 +546,17 @@ def selftest():
         try:  # имитируем окружение БЕЗ глобальной идентичности (как CI-раннер)
             _os.environ["GIT_CONFIG_GLOBAL"] = _os.devnull
             _os.environ["GIT_CONFIG_SYSTEM"] = _os.devnull
-            expect("rc2c: клон без разрешимой идентичности -> поставлен fallback", _ensure_identity(cl) is True)
+            # Кросс-платформенно: на Linux-раннере без идентичности `git var GIT_COMMITTER_IDENT` падает ->
+            # ставится fallback; на macOS git СИНТЕЗИРУЕТ identity из OS (user@host) -> fallback не нужен.
+            # Инвариант _ensure_identity на ОБОИХ: fallback ровно тогда, когда identity неразрешима, и после
+            # вызова коммит в клоне проходит (это и снимает ложный конфликт fan-in).
+            _resolvable = subprocess.run(["git", "-C", str(cl), "var", "GIT_COMMITTER_IDENT"],
+                                         capture_output=True, text=True).returncode == 0
+            expect("rc2c: fallback ставится РОВНО когда идентичность неразрешима (кросс-платформенно)",
+                   _ensure_identity(cl) is (not _resolvable))
             (cl / "g.py").write_text("y=2\n", encoding="utf-8")
             _git(cl, "add", "-A")
-            expect("rc2c: после fallback коммит в клоне проходит (не ложный конфликт fan-in)",
+            expect("rc2c: после _ensure_identity коммит в клоне проходит (не ложный конфликт fan-in)",
                    _git(cl, "commit", "-qm", "c", check=False).returncode == 0)
             expect("rc2c: своя идентичность НЕ подменяется", _ensure_identity(src) is False
                    and _git(src, "config", "user.email").stdout.strip() == "own@t")
@@ -547,6 +570,10 @@ def selftest():
     expect("rc2: _glob_match 'api/**' ловит вложенный путь", _glob_match("api/routes/x.py", "api/**") and not _glob_match("ui/x.py", "api/**"))
     expect("rc2 #2: _scope_ok пропускает инфра-пути (.ai/…), ловит чужие",
            _scope_ok([".ai/plan.yaml", "api/x.py", "ui/y.py"], ["api/**"]) == (False, ["ui/y.py"]))
+    expect("rc3: _scope_ok освобождает build-артефакты (egg-info/кэш/lock), не считает нарушением",
+           _scope_ok(["calc.py", "tasks.egg-info/PKG-INFO", "__pycache__/x.pyc", "package-lock.json"],
+                     ["calc.py"]) == (True, [])
+           and _scope_ok(["calc.py", "tasks.egg-info/PKG-INFO", "rogue.py"], ["calc.py"]) == (False, ["rogue.py"]))
     with tempfile.TemporaryDirectory() as td4:  # #8: self-created clones_dir очищается (нет утечки)
         _git(td4, "init", "-q", check=False); _git(td4, "config", "user.email", "t@t"); _git(td4, "config", "user.name", "t")
         (Path(td4) / "s.py").write_text("x=1\n", encoding="utf-8"); _git(td4, "add", "-A"); _git(td4, "commit", "-qm", "s", check=False)
