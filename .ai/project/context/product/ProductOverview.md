@@ -31,7 +31,7 @@ The player learns by making decisions inside a system. Concepts are unlocked thr
 
 - Platform route shell: home, journey, play, Codex, artifacts, profile.
 - Chapter 01 vertical slice: "Дело №01: Непроверенный отчёт".
-- First Contact with Zero prologue before the first incident: boot, dialogue, two diagnostic choices, chapter title, and handoff.
+- Cold open on the incident: the world, the player's role as an outside specialist, the clock, the failure, Zero, one investigative choice, and the chapter title. The belief question waits until the case is closed.
 - YAML content loader with schema validation.
 - Event Log driven campaign state.
 - Projection engine for dashboard, Codex, profile, and artifacts.

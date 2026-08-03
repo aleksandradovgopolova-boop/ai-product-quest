@@ -7,28 +7,29 @@ AI Product Quest is a local-first MVP. The repository currently contains one pla
 The first playable flow is:
 
 ```text
-zero-boot
-→ zero-first-contact
-→ zero-product-question
-→ zero-product-response
-→ zero-signal
-→ zero-method
-→ zero-imagine
-→ zero-hypotheses
+incident-call
+→ incident-brief
+→ zero-online
+→ start-from-* (one of four openings)
 → chapter-title
-→ mission-handoff
-→ case-open
-→ incident
 → Chapter 01 investigation
+→ belief-ask
+→ belief-answer
+→ codex-prompt
 → final
 ```
 
-The opening Zero prologue is implemented in YAML, not only in docs:
+The chapter opens on the incident itself: the world, the player's role as an outside
+specialist, the clock, and the failure are on screen before Zero asks anything. The two
+reflective questions live inside the case — the first move as `zero-online`, the belief
+question as `belief-ask`, after the player has something to answer from.
+
+The opening is implemented in YAML, not only in docs:
 
 - `content/chapters/chapter-01/chapter.yml`
 - `content/chapters/chapter-01/scenes.yml`
 
-`initialSceneId` is `zero-boot`.
+`initialSceneId` is `incident-call`.
 
 ## Source Of Truth
 
@@ -105,6 +106,6 @@ npm run qa:chapter01:screens
 - Prologue answers are recorded through `setVariables` and must come back in Zero's own lines. Every branch of a question needs `setVariables`, or the recap goes blank.
 - Do not add Chapters 02-06 yet.
 - Keep Chapter 01 as the vertical slice until product acceptance.
-- Keep Zero prologue minimal and non-expository.
+- Keep Zero's voice minimal and non-expository: no world lecture, no answer handed over.
 - Keep gameplay UI out of landing-page, LMS, SaaS, dashboard, bento, or card-heavy patterns.
 - Any new domain event must be added to `.ai/project/contracts/events.yaml`.

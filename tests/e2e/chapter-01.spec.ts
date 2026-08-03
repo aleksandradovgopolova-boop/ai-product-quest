@@ -39,31 +39,35 @@ test("Chapter 01 supports keyboard selection, confirmation, and back navigation"
   await resetGame(page);
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "Не волнуйся.");
+  await expectScene(page, "Система собрала его ночью, сама.");
   await page.waitForTimeout(320);
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "Что создаёт хороший продукт?");
+  await expectScene(page, "Я Zero. Я живу внутри АКСИОМЫ.");
+  await page.waitForTimeout(320);
+
+  await page.keyboard.press("Enter");
+  await expectScene(page, "С чего начнёшь?");
 
   // No answer may be pre-highlighted: a scene must not point at one before the player aims.
-  for (const label of ["Хорошая идея.", "Хорошая команда.", "Я не знаю."]) {
+  for (const label of ["Прочитать отчёт", "Посмотреть вход системы", "Найти, кто подписал", "Пока не знаю"]) {
     await expect(choice(page, label)).not.toHaveAttribute("aria-current", "true");
   }
 
   await page.keyboard.press("ArrowDown");
-  await expect(choice(page, "Хорошая идея.")).toHaveAttribute("aria-current", "true");
+  await expect(choice(page, "Прочитать отчёт")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("ArrowDown");
-  await expect(choice(page, "Хорошая команда.")).toHaveAttribute("aria-current", "true");
+  await expect(choice(page, "Посмотреть вход системы")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("ArrowDown");
-  await expect(choice(page, "Я не знаю.")).toHaveAttribute("aria-current", "true");
+  await expect(choice(page, "Найти, кто подписал")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "Записал.");
+  await expectScene(page, "Аналитик ночной смены. Он отчёт не писал — он его принял.");
 
   await page.keyboard.press("Escape");
-  await expectScene(page, "Что создаёт хороший продукт?");
+  await expectScene(page, "С чего начнёшь?");
 });
 
 test("Chapter 01 can be replayed after reset", async ({ page }) => {
@@ -110,22 +114,17 @@ async function resetGame(page: Page) {
 }
 
 async function completeChapterOne(page: Page) {
-  await advanceAnyInput(page, "Ты пришла раньше, чем я ожидал.");
-  await advanceAnyInput(page, "Что создаёт хороший продукт?");
-  await choose(page, "Я не знаю.");
-  // The prologue answer must come back as Zero's own line, not only as an event.
-  await expectScene(page, "«не знаю».");
-  await advanceAnyInput(page, "Знаешь, что меня всегда удивляет?");
-  await advanceAnyInput(page, "Поэтому здесь всё устроено немного иначе.");
-  await choose(page, "Продолжить");
-  await choose(page, "Искать проблему.");
-  await expectScene(page, "Начинать ты будешь так: «искать проблему».");
+  await advanceAnyInput(page, "Дело №01. Непроверенный отчёт.");
+  await advanceAnyInput(page, "С чего начнёшь?");
+  // Four answers under a line of dialogue is the tallest question in the chapter; it must
+  // still clear the topbar and the status readout.
+  await assertViewportIntegrity(page);
+  await choose(page, "Посмотреть вход системы");
+  // The first move must get its own answer from Zero, not a shared one.
+  await expectScene(page, "Туда мы дойдём, и вскрывать будем целиком.");
   await page.waitForTimeout(320);
   await advanceToTitle(page);
-  await advanceAnyInput(page, "Люди редко ошибаются потому, что плохо думают.");
-  await advanceAnyInput(page, "Открываю рабочий контур...");
-  await advanceAnyInput(page, "Система подготовила отчёт.");
-  await choose(page, "Продолжить");
+  await expectScene(page, "Откуда они взялись?");
   await choose(page, "Она продолжила текст");
   await choose(page, "Посмотреть ближе");
   await choose(page, "Попробовать самой");
@@ -146,6 +145,11 @@ async function completeChapterOne(page: Page) {
   await assertViewportIntegrity(page);
   await choose(page, "Продолжить");
   await choose(page, "Сохранить открытие");
+  // The belief question lands after the case, so the answer can come from what just happened.
+  await expectScene(page, "Что создаёт хороший продукт?");
+  await choose(page, "Возможность проверить каждый ответ.");
+  await expectScene(page, "«возможность проверить каждый ответ».");
+  await advanceAnyInput(page, "Сохранить это открытие?");
   await choose(page, "Записать в Codex");
   await expectScene(page, "Дело закрыто.");
 }

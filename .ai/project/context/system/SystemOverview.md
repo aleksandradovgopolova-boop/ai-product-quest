@@ -28,12 +28,12 @@ AI Product Quest is currently a local-first Next.js/Vinext web app. Runtime game
 ## Critical Flows
 
 1. YAML content is validated and normalized by the content loader.
-2. New campaigns enter Chapter 01 at `zero-boot`, the First Contact with Zero prologue.
+2. New campaigns enter Chapter 01 at `incident-call`, the cold open on the incident.
 3. `advanceMode: any-input` scenes move forward on keyboard or tap without showing action buttons.
 4. Player choices append Event Log records.
 5. Projection Engine rebuilds CampaignState from Event Log.
 6. Codex, profile, dashboard, and artifacts are derived projections.
-7. Browser E2E validates the Zero prologue, Chapter 01 happy path, keyboard flow, replay, Codex, artifacts, and mobile layout.
+7. Browser E2E validates the cold open, Chapter 01 happy path, keyboard flow, replay, Codex, artifacts, and mobile layout.
 
 ## Dependencies
 

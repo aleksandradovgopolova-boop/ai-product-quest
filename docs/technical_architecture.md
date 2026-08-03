@@ -28,7 +28,7 @@ Gameplay code is separated into:
 
 Sprint 0.5 adds architecture guardrails in `tests/architecture-boundaries.test.mts`. These tests are part of `npm test` and enforce the layer boundaries documented in `docs/architecture/dependency-graph.md`.
 
-Sprint 0.5 also adds browser playthrough coverage in `tests/e2e/chapter-01.spec.ts`. That suite verifies the First Contact with Zero prologue, Chapter 01 happy path, keyboard navigation, reset/replay, Codex persistence, artifact projection, and mobile viewport integrity.
+Sprint 0.5 also adds browser playthrough coverage in `tests/e2e/chapter-01.spec.ts`. That suite verifies the cold open on the incident, Chapter 01 happy path, keyboard navigation, reset/replay, Codex persistence, artifact projection, and mobile viewport integrity.
 
 ## 1. Архитектурная цель
 

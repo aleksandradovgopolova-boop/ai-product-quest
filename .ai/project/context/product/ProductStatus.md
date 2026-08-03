@@ -17,7 +17,7 @@ sources:
 |---|---|---|
 | Frontend | Ready for local MVP review | `app/`, `src/platform/`, `src/features/chapter-01/` |
 | Chapter 01 | Playable vertical slice | `content/chapters/chapter-01/`, `tests/golden-playthrough.test.mts`, `tests/e2e/chapter-01.spec.ts` |
-| First Contact with Zero | Implemented as Chapter 01 prologue | `content/chapters/chapter-01/scenes.yml`, `advanceMode: any-input`, `tests/e2e/chapter-01.spec.ts` |
+| First Contact with Zero | Implemented as the cold open of Chapter 01: Zero appears inside the incident, not before it | `content/chapters/chapter-01/scenes.yml`, `advanceMode: any-input`, `tests/e2e/chapter-01.spec.ts` |
 | Content source | YAML source of truth | `content/`, `schemas/`, `src/infrastructure/content/contentLoader.ts` |
 | State model | Event Log with projections | `src/domain/campaign/types.ts`, `src/engines/projection/projectCampaign.ts` |
 | Persistence | Local browser storage only | `src/infrastructure/save/saveAdapter.ts` |

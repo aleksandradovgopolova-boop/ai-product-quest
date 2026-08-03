@@ -168,7 +168,7 @@ function pickExistingScene(sceneById: Record<string, unknown>, candidates: Array
     }
   }
 
-  return "incident";
+  return "incident-brief";
 }
 
 function safeJson(raw: string): unknown {

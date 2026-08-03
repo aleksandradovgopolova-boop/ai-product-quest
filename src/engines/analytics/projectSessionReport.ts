@@ -21,10 +21,10 @@ export type SessionReport = {
   startedAt?: string;
   lastEventAt?: string;
   elapsedMs?: number;
-  prologue: {
+  opening: {
     completed: boolean;
-    reachedIncident: boolean;
-    abandonedBeforeIncident: boolean;
+    reachedInvestigation: boolean;
+    abandonedBeforeInvestigation: boolean;
     answers: Record<string, string>;
     elapsedMs?: number;
   };
@@ -52,7 +52,8 @@ export type SessionReport = {
   notInstrumented: string[];
 };
 
-const incidentSceneId = "incident";
+/** The chapter opens on the incident, so the first milestone is the investigation itself. */
+const investigationSceneId = "origin";
 const finalSceneId = "final";
 
 /** The one decision that holds the report back until a source exists. */
@@ -113,7 +114,7 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
 
   const startedAt = events[0]?.occurredAt;
   const lastEventAt = events.at(-1)?.occurredAt;
-  const incidentAt = firstSceneEntryAt(sceneEntries, incidentSceneId);
+  const investigationAt = firstSceneEntryAt(sceneEntries, investigationSceneId);
 
   // Read attempts from the log, not from state.decisions: that record is keyed by
   // decisionId, so a retry overwrites nothing and the order of attempts is lost.
@@ -134,12 +135,12 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
     startedAt,
     lastEventAt,
     elapsedMs: durationMs(startedAt, lastEventAt),
-    prologue: {
-      completed: Boolean(incidentAt),
-      reachedIncident: Boolean(incidentAt),
-      abandonedBeforeIncident: !incidentAt,
+    opening: {
+      completed: Boolean(investigationAt),
+      reachedInvestigation: Boolean(investigationAt),
+      abandonedBeforeInvestigation: !investigationAt,
       answers,
-      elapsedMs: durationMs(startedAt, incidentAt),
+      elapsedMs: durationMs(startedAt, investigationAt),
     },
     scenesEntered: sceneEntries.length,
     uniqueScenesEntered: seenScenes.size,

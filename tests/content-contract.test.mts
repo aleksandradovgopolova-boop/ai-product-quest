@@ -10,14 +10,14 @@ test("YAML content loads as the canonical Platform → Season → Chapter → Sc
   assert.equal(content.platformId, "ai-product-quest");
   assert.deepEqual(content.chapters.map((item) => item.id), ["chapter-01"]);
   assert.equal(content.seasons[0]?.chapterIds.length, 1);
-  assert.equal(chapter.initialSceneId, "zero-boot");
+  assert.equal(chapter.initialSceneId, "incident-call");
   assert.equal(chapter.scenes.length > 20, true);
-  assert.equal(chapter.sceneById["zero-boot"].advanceMode, "any-input");
-  assert.equal(chapter.sceneById["zero-boot"].autoNextSceneId, "zero-first-contact");
-  assert.equal(chapter.sceneById["zero-product-question"].choices?.length, 3);
-  assert.equal(chapter.sceneById["zero-imagine"].choices?.length, 4);
-  assert.equal(chapter.sceneById["case-open"].autoNextSceneId, "incident");
-  assert.equal(chapter.sceneById["case-open"].presentation, "terminal");
+  assert.equal(chapter.sceneById["incident-call"].advanceMode, "any-input");
+  assert.equal(chapter.sceneById["incident-call"].autoNextSceneId, "incident-brief");
+  assert.equal(chapter.sceneById["zero-first-move"].choices?.length, 4);
+  assert.equal(chapter.sceneById["belief-ask"].choices?.length, 3);
+  assert.equal(chapter.sceneById["incident-brief"].autoNextSceneId, "zero-online");
+  assert.equal(chapter.sceneById["incident-brief"].presentation, "terminal");
   assert.equal(chapter.sceneById["context-reveal"].evidence?.length, 3);
   assert.equal(chapter.sceneById.decision.hypothesis?.id, "missing-source-trace");
   assert.equal(chapter.sceneById.final.choices?.[0]?.action, "artifacts");
@@ -25,7 +25,24 @@ test("YAML content loads as the canonical Platform → Season → Chapter → Sc
   assert.deepEqual(chapter.artifactIds, ["assistant-blueprint"]);
 });
 
-test("every prologue answer records a variable and every placeholder resolves", () => {
+test("the chapter opens on the incident, not on a greeting", () => {
+  const content = loadGameContent();
+  const chapter = content.chapterById["chapter-01"];
+  const openingLines = [chapter.sceneById["incident-call"], chapter.sceneById["incident-brief"]].flatMap((scene) => scene.lines);
+
+  // The player must learn where they are, what broke, and how long they have before anyone asks them anything.
+  assert.ok(openingLines.some((line) => line.includes("АКСИОМА")), "the opening must name the world");
+  assert.ok(openingLines.some((line) => line.includes("внешний специалист")), "the opening must name the player's role");
+  assert.ok(openingLines.some((line) => line.includes("09:00")), "the opening must put the case on a clock");
+  assert.ok(openingLines.some((line) => line.includes("не найден во внутренних документах")), "the opening must state the failure");
+
+  // The first question a player answers must come after the situation exists.
+  const questionIndex = chapter.scenes.findIndex((scene) => (scene.choices?.length ?? 0) > 1);
+  assert.equal(chapter.scenes[questionIndex]?.id, "zero-first-move");
+  assert.ok(chapter.scenes.slice(0, questionIndex).some((scene) => scene.id === "incident-brief"));
+});
+
+test("every recorded answer keeps a variable and every placeholder resolves", () => {
   const content = loadGameContent();
   const chapter = content.chapterById["chapter-01"];
   const declared = new Set<string>(["prediction"]);
@@ -49,7 +66,7 @@ test("every prologue answer records a variable and every placeholder resolves", 
   }
 
   // Every branch of a question must record the answer, otherwise the recap goes blank.
-  for (const sceneId of ["zero-product-question", "zero-imagine"]) {
+  for (const sceneId of ["zero-first-move", "belief-ask"]) {
     for (const choice of chapter.sceneById[sceneId].choices ?? []) {
       assert.ok(choice.setVariables, `${sceneId}/${choice.id} must record an answer`);
     }

@@ -14,7 +14,7 @@ sources:
 ## In Focus Now
 
 - Polish Chapter 01 as the only playable vertical slice.
-- Preserve the implemented First Contact with Zero prologue unless the product direction explicitly changes.
+- Keep the chapter opening on the incident: the situation comes before any question the player answers.
 - Keep the platform architecture stable before adding Chapters 02-06.
 - Treat every gameplay change as content/schema/event/projection work, not only UI work.
 - Keep visual QA and browser E2E green for desktop and mobile.

@@ -1,148 +1,112 @@
 scenes:
-  - id: zero-boot
+  - id: incident-call
     stepIndex: 1
     chrome: bare
     presentation: terminal
     advanceMode: any-input
-    autoNextSceneId: zero-first-contact
+    autoNextSceneId: incident-brief
     lines:
+      - "АКСИОМА. Внешний контур."
+      - "08:42. Вызов по инциденту."
       - "Подключение..."
-      - "Проверка среды..."
-      - "Соединение установлено."
-      - "..."
+      - "Доступ выдан: внешний специалист."
 
-  - id: zero-first-contact
+  - id: incident-brief
     stepIndex: 1
-    chrome: bare
+    presentation: terminal
+    advanceMode: any-input
+    autoNextSceneId: zero-online
+    lines:
+      - "Дело №01. Непроверенный отчёт."
+      - "Система собрала его ночью, сама."
+      - "В 09:00 он ляжет на совещание руководства."
+      - "Ни один факт в нём не найден во внутренних документах."
+
+  - id: zero-online
+    stepIndex: 1
     presentation: dialogue
     advanceMode: any-input
-    autoNextSceneId: zero-product-question
+    autoNextSceneId: zero-first-move
     lines:
-      - "Ты пришла раньше, чем я ожидал."
-      - "Не волнуйся."
-      - "Я тоже не люблю первые знакомства."
-      - "Обычно в этот момент начинают рассказывать историю мира."
-      - "Я не буду."
-      - "Всё равно ты забудешь половину через пять минут."
+      - "Я Zero. Я живу внутри АКСИОМЫ."
+      - "Изнутри не видно, где она выдумывает."
+      - "Поэтому вызвали тебя."
     prompt:
       - "ZERO"
 
-  - id: zero-product-question
+  - id: zero-first-move
     stepIndex: 1
-    chrome: bare
     presentation: dialogue
     lines:
-      - "Вместо этого я хочу кое-что проверить."
-      - "Что создаёт хороший продукт?"
+      - "С чего начнёшь?"
     prompt:
       - "ZERO"
     choices:
-      - id: product-idea
-        label: "Хорошая идея."
-        nextSceneId: zero-product-response
+      - id: start-report
+        label: "Прочитать отчёт"
+        nextSceneId: start-from-report
         setVariables:
-          belief: "хорошая идея"
-      - id: product-team
-        label: "Хорошая команда."
-        nextSceneId: zero-product-response
+          approach: "с отчёта"
+      - id: start-input
+        label: "Посмотреть вход системы"
+        nextSceneId: start-from-input
         setVariables:
-          belief: "хорошая команда"
-      - id: product-unknown
-        label: "Я не знаю."
-        nextSceneId: zero-product-response
+          approach: "со входа системы"
+      - id: start-owner
+        label: "Найти, кто подписал"
+        nextSceneId: start-from-owner
         setVariables:
-          belief: "не знаю"
+          approach: "с подписи человека"
+      - id: start-unsure
+        label: "Пока не знаю"
+        nextSceneId: start-from-nothing
+        setVariables:
+          approach: "с пустого места"
 
-  - id: zero-product-response
+  - id: start-from-report
     stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    advanceMode: any-input
-    autoNextSceneId: zero-signal
-    lines:
-      - "«{{belief}}»."
-      - "Записал."
-      - "У большинства людей первый ответ оказывается временным."
-      - "Посмотрим, что останется к концу путешествия."
-    prompt:
-      - "ZERO"
-
-  - id: zero-signal
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    visual: signal
-    advanceMode: any-input
-    autoNextSceneId: zero-method
-    lines:
-      - "Знаешь, что меня всегда удивляет?"
-      - "Люди очень любят готовые ответы."
-      - "Но почти никогда не задают хороший вопрос."
-    prompt:
-      - "ZERO"
-
-  - id: zero-method
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    lines:
-      - "Поэтому здесь всё устроено немного иначе."
-      - "Я почти никогда не буду говорить, что правильно."
-      - "Вместо этого мы будем искать объяснения вместе."
-    prompt:
-      - "ZERO"
-    choices:
-      - id: continue-zero-method
-        label: "Продолжить"
-        nextSceneId: zero-imagine
-        tone: primary
-
-  - id: zero-imagine
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    lines:
-      - "Представь."
-      - "Завтра ты просыпаешься..."
-      - "...и тебе говорят:"
-      - "Создай продукт, который изменит жизнь миллионов людей."
-      - "С чего ты начнёшь?"
-    prompt:
-      - "ZERO"
-    choices:
-      - id: start-idea
-        label: "Искать идею."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "искать идею"
-      - id: start-problem
-        label: "Искать проблему."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "искать проблему"
-      - id: start-people
-        label: "Искать людей."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "искать людей"
-      - id: start-unknown
-        label: "Не знаю."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "не знаю"
-
-  - id: zero-hypotheses
-    stepIndex: 1
-    chrome: bare
     presentation: dialogue
     advanceMode: any-input
     autoNextSceneId: chapter-title
     lines:
-      - "Две гипотезы о тебе."
-      - "Продукт — это «{{belief}}»."
-      - "Начинать ты будешь так: «{{approach}}»."
-      - "Скорее всего, обе неверны."
-      - "Это нормально."
+      - "Открываю."
+      - "Двенадцать страниц, ни одной оговорки."
+      - "Читается как правда — это первое, что стоит заметить."
+    prompt:
+      - "ZERO"
+
+  - id: start-from-input
+    stepIndex: 1
+    presentation: dialogue
+    advanceMode: any-input
+    autoNextSceneId: chapter-title
+    lines:
+      - "Туда мы дойдём, и вскрывать будем целиком."
+      - "Но вход я тебе покажу только вместе с тем, что система из него сделала."
+      - "Иначе ты поверишь мне на слово."
+    prompt:
+      - "ZERO"
+
+  - id: start-from-owner
+    stepIndex: 1
+    presentation: dialogue
+    advanceMode: any-input
+    autoNextSceneId: chapter-title
+    lines:
+      - "Аналитик ночной смены. Он отчёт не писал — он его принял."
+      - "Через восемнадцать минут он спросит то же самое, что и ты."
+      - "Откуда это взялось."
+    prompt:
+      - "ZERO"
+
+  - id: start-from-nothing
+    stepIndex: 1
+    presentation: dialogue
+    advanceMode: any-input
+    autoNextSceneId: chapter-title
+    lines:
+      - "Честно. Дело открыли двадцать минут назад."
+      - "Начнём с того, что уже лежит на столе."
     prompt:
       - "ZERO"
 
@@ -152,55 +116,18 @@ scenes:
     presentation: title
     advanceMode: any-input
     autoAdvanceMs: 2800
-    autoNextSceneId: mission-handoff
+    autoNextSceneId: origin
     lines:
       - "AI Product Quest"
       - "Глава I"
       - "Видеть"
 
-  - id: mission-handoff
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    advanceMode: any-input
-    autoNextSceneId: case-open
-    lines:
-      - "Люди редко ошибаются потому, что плохо думают."
-      - "Гораздо чаще они принимают правильные решения..."
-      - "...для неправильной картины мира."
-      - "Давай попробуем научиться её видеть."
-    prompt:
-      - "ZERO"
-
-  - id: case-open
-    stepIndex: 1
-    chrome: bare
-    presentation: terminal
-    advanceMode: any-input
-    autoNextSceneId: incident
-    lines:
-      - "Открываю рабочий контур..."
-      - "Дело №01. Непроверенный отчёт."
-      - "Время: 08:42:17."
-      - "Дальше решения принимаешь ты."
-
-  - id: incident
-    stepIndex: 1
-    lines:
-      - "Система подготовила отчёт."
-      - "Но ни один из фактов"
-      - "не найден во внутренних документах."
-    choices:
-      - id: continue
-        label: "Продолжить"
-        nextSceneId: origin
-        tone: primary
-
   - id: origin
     stepIndex: 1
     lines:
-      - "Как думаешь,"
-      - "откуда они взялись?"
+      - "Факты в отчёте выглядят"
+      - "как ваши внутренние данные."
+      - "Откуда они взялись?"
     choices:
       - id: internal-docs
         label: "Из внутренних документов"
@@ -515,8 +442,46 @@ scenes:
     choices:
       - id: save-discovery
         label: "Сохранить открытие"
-        nextSceneId: codex-prompt
+        nextSceneId: belief-ask
         tone: primary
+
+  - id: belief-ask
+    stepIndex: 6
+    presentation: dialogue
+    lines:
+      - "Теперь можно и спросить."
+      - "Что создаёт хороший продукт?"
+    prompt:
+      - "ZERO"
+    choices:
+      - id: belief-idea
+        label: "Хорошая идея."
+        nextSceneId: belief-answer
+        setVariables:
+          belief: "хорошая идея"
+      - id: belief-team
+        label: "Хорошая команда."
+        nextSceneId: belief-answer
+        setVariables:
+          belief: "хорошая команда"
+      - id: belief-trace
+        label: "Возможность проверить каждый ответ."
+        nextSceneId: belief-answer
+        setVariables:
+          belief: "возможность проверить каждый ответ"
+
+  - id: belief-answer
+    stepIndex: 6
+    presentation: dialogue
+    advanceMode: any-input
+    autoNextSceneId: codex-prompt
+    lines:
+      - "«{{belief}}»."
+      - "Записал."
+      - "Начала ты {{approach}}, а закончила тем, что потребовала след источника."
+      - "Проверим этот ответ в следующей главе."
+    prompt:
+      - "ZERO"
 
   - id: codex-prompt
     stepIndex: 6

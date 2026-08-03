@@ -86,7 +86,7 @@ Legacy save formats are handled only by `src/infrastructure/save/saveAdapter.ts`
 ## Remaining Risks
 
 - Persistence is still browser `localStorage`, not a real event store.
-- React component tests are still light; browser E2E now covers the First Contact with Zero prologue, Chapter 01 happy path, keyboard flow, replay, Codex, artifacts, and mobile viewport integrity.
+- React component tests are still light; browser E2E now covers the cold open on the incident, Chapter 01 happy path, keyboard flow, replay, Codex, artifacts, and mobile viewport integrity.
 - The architecture package is now integrated as docs/schemas, but future agents must keep docs and implementation in sync.
 - `npm audit` reports existing dependency vulnerabilities; no forced upgrades were applied during Sprint 0.
 
@@ -99,7 +99,7 @@ Sprint 0.5 adds developer-experience guardrails:
 - dependency graph documentation;
 - Definition of Done for chapters, engines, state, UI, and dependencies;
 - root repository rules.
-- Chapter 01 browser playthrough with Playwright, including the Zero prologue.
+- Chapter 01 browser playthrough with Playwright, including the cold open on the incident.
 - reproducible Chapter 01 visual QA screenshots via `npm run qa:chapter01:screens`.
 
 ## AI Ops Addendum

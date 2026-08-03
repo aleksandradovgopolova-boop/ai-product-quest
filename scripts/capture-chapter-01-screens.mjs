@@ -11,23 +11,17 @@ const storageKeys = [
   "ai-product-quest-mission-v2",
   "ai-product-quest-progress",
 ];
-// The prologue advances on any input; only the last two steps offer choices.
-const prologuePath = [
-  { advance: true, expect: "Ты пришла раньше, чем я ожидал." },
-  { advance: true, expect: "Что создаёт хороший продукт?" },
-  { choose: "Я не знаю." },
-  { advance: true, expect: "Знаешь, что меня всегда удивляет?" },
-  { advance: true, expect: "Поэтому здесь всё устроено немного иначе." },
-  { choose: "Продолжить" },
-  { choose: "Искать проблему." },
+// The opening advances on any input until Zero asks where to start.
+const openingPath = [
+  { advance: true, expect: "Дело №01. Непроверенный отчёт." },
+  { advance: true, expect: "Я Zero. Я живу внутри АКСИОМЫ." },
+  { advance: true, expect: "С чего начнёшь?" },
+  { choose: "Прочитать отчёт" },
   { advance: true, expect: "AI Product Quest" },
-  // The title card advances itself; pressing a key here would skip mission-handoff.
-  { await: "Люди редко ошибаются потому, что плохо думают." },
-  { advance: true, expect: "Открываю рабочий контур..." },
-  { advance: true, expect: "Система подготовила отчёт." },
+  // The title card advances itself; pressing a key here would skip the investigation opener.
+  { await: "Откуда они взялись?" },
 ];
 const happyPath = [
-  "Продолжить",
   "Она продолжила текст",
   "Посмотреть ближе",
   "Попробовать самой",
@@ -42,6 +36,7 @@ const happyPath = [
   "Остановить отчёт и пометить как непроверенный",
   "Продолжить",
   "Сохранить открытие",
+  "Хорошая команда.",
   "Записать в Codex",
 ];
 const viewports = [
@@ -66,9 +61,9 @@ for (const viewport of viewports) {
   const page = await context.newPage();
 
   await resetChapter(page);
-  await screenshot(page, `chapter-01-prologue-${viewport.name}.png`);
+  await screenshot(page, `chapter-01-opening-${viewport.name}.png`);
 
-  await completePrologue(page);
+  await completeOpening(page);
   await screenshot(page, `chapter-01-start-${viewport.name}.png`);
 
   await completeChapter(page);
@@ -111,8 +106,8 @@ async function resetChapter(page) {
   await page.getByText("Подключение...", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
-async function completePrologue(page) {
-  for (const step of prologuePath) {
+async function completeOpening(page) {
+  for (const step of openingPath) {
     if (step.choose) {
       await choose(page, step.choose);
       continue;

@@ -3,7 +3,7 @@ seasonId: season-01
 number: 1
 title: "Дело №01: Непроверенный отчёт"
 summary: "Корпоративный отчёт содержит неподтверждённые сведения."
-initialSceneId: zero-boot
+initialSceneId: incident-call
 initialSystemState:
   usefulness: 42
   quality: 38

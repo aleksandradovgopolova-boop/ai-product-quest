@@ -27,7 +27,7 @@ const passingInterview: InterviewScore = {
 function makeRun(participant: string, shape: RunShape = {}): CohortRun {
   const report = {
     elapsedMs: (shape.elapsedMinutes ?? 9) * 60_000,
-    prologue: { abandonedBeforeIncident: shape.abandoned ?? false },
+    opening: { abandonedBeforeInvestigation: shape.abandoned ?? false },
     decision: {
       first: shape.firstDecisionId === undefined ? { decisionId: "quarantine-report" } : { decisionId: shape.firstDecisionId },
       correctedAfterFeedback: shape.correctedAfterFeedback ?? false,
@@ -154,11 +154,11 @@ test("a short cohort reports its size instead of pretending the thresholds hold"
   );
 });
 
-test("prologue abandonment above the limit fails the cohort", () => {
+test("opening abandonment above the limit fails the cohort", () => {
   const abandoned: RunShape = { abandoned: true, elapsedMinutes: 9 };
   const report = projectCohortReport(makeCohort([abandoned, abandoned]));
 
-  assert.equal(criterion(report, "abandoned-in-prologue").observed, 2);
-  assert.equal(criterion(report, "abandoned-in-prologue").met, false);
+  assert.equal(criterion(report, "abandoned-in-opening").observed, 2);
+  assert.equal(criterion(report, "abandoned-in-opening").met, false);
   assert.equal(report.accepted, false);
 });

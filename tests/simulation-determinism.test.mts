@@ -11,33 +11,21 @@ test("simulation and event ids are deterministic for the same playthrough", () =
   function play() {
     let state = createInitialCampaignState(content, "chapter-01", at);
 
-    for (const sceneId of ["zero-first-contact", "zero-product-question"]) {
+    for (const sceneId of ["incident-brief", "zero-online", "zero-first-move"]) {
       state = advanceToScene({ content, state, sceneId, occurredAt: at });
     }
 
     for (const choiceId of [
-      "product-idea",
+      "start-report",
     ]) {
       state = runChoice({ content, state, choiceIdOrIndex: choiceId, occurredAt: at });
     }
 
-    for (const sceneId of ["zero-signal", "zero-method"]) {
+    for (const sceneId of ["chapter-title", "origin"]) {
       state = advanceToScene({ content, state, sceneId, occurredAt: at });
     }
 
     for (const choiceId of [
-      "continue-zero-method",
-      "start-idea",
-    ]) {
-      state = runChoice({ content, state, choiceIdOrIndex: choiceId, occurredAt: at });
-    }
-
-    for (const sceneId of ["chapter-title", "mission-handoff", "incident"]) {
-      state = advanceToScene({ content, state, sceneId, occurredAt: at });
-    }
-
-    for (const choiceId of [
-      "continue",
       "continuation",
       "inspect-principle",
       "try",

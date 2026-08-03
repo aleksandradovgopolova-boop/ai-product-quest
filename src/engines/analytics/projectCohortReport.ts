@@ -145,10 +145,10 @@ export function projectCohortReport(runs: CohortRun[]): CohortReport {
       met: durations.length === runs.length && runs.length > 0 ? within(median(durations) / 60_000, 7, 12) : undefined,
     },
     logCriterion(
-      "abandoned-in-prologue",
-      "Не доходят от начала до инцидента",
+      "abandoned-in-opening",
+      "Не доходят от начала до расследования",
       { kind: "max", value: 1 },
-      count(runs, (run) => run.report.prologue.abandonedBeforeIncident),
+      count(runs, (run) => run.report.opening.abandonedBeforeInvestigation),
     ),
   ];
 
