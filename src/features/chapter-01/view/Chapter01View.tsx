@@ -2,6 +2,8 @@ import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import type { CampaignState, Chapter, Evidence, PlatformContent, SceneChoice } from "@/src/domain/campaign/types";
 import { interpolateLines } from "@/src/application/chapter-runner/chapterRunner";
 import { cn } from "@/src/lib/utils";
+import { selectZeroState, speakingDurationMs } from "@/src/features/chapter-01/zeroState";
+import { ZeroSprite } from "@/src/features/chapter-01/view/ZeroSprite";
 import { CaseProgress } from "@/src/features/chapter-01/view/CaseProgress";
 import { ChoiceList } from "@/src/features/chapter-01/view/ChoiceList";
 import { CodexOverlay } from "@/src/features/chapter-01/view/CodexOverlay";
@@ -71,6 +73,13 @@ export function Chapter01View({
         ) : null}
         {!isBare ? <SystemStatus value={status} /> : null}
         {!isBare ? <SystemMessage text={systemMessage} /> : null}
+        {!isBare ? (
+          <ZeroSprite
+            key={scene.id}
+            speakingMs={speakingDurationMs({ lineCount: lines.length, lineDelayMs: lineDelay * 1000 })}
+            state={selectZeroState({ scene, isProcessing })}
+          />
+        ) : null}
 
         <AnimatePresence mode="wait">
           <motion.section

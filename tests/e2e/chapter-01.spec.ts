@@ -191,7 +191,7 @@ async function expectScene(page: Page, text: string) {
 
 async function assertViewportIntegrity(page: Page) {
   const result = await page.evaluate(() => {
-    const selectors = [".system-topbar", ".system-status", ".flow-scene", ".system-progress", ".system-keys"];
+    const selectors = [".system-topbar", ".system-status", ".flow-scene", ".system-progress", ".system-keys", ".zero-sprite"];
     const viewport = {
       height: window.innerHeight,
       width: window.innerWidth,

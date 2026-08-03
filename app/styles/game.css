@@ -858,3 +858,56 @@
     right: 64px;
   }
 }
+
+/*
+ * Zero's body. It is HUD state, not decoration: the row of the sheet is chosen by what the
+ * system is doing, and the sprite lives outside the reading column so it never moves the text.
+ */
+.zero-sprite {
+  aspect-ratio: 192 / 208;
+  background-image: var(--zero-sheet);
+  background-repeat: no-repeat;
+  background-size: calc(var(--zero-frames) * 100%) calc(var(--zero-rows) * 100%);
+  background-position-x: 0%;
+  background-position-y: calc(var(--zero-row) * 100% / (var(--zero-rows) - 1));
+  bottom: clamp(18px, 3vw, 36px);
+  image-rendering: pixelated;
+  left: clamp(30px, 5vw, 76px);
+  opacity: 0.92;
+  position: fixed;
+  width: clamp(46px, 5vw, 76px);
+  animation: zero-frames var(--zero-duration) steps(var(--zero-frames)) infinite;
+}
+
+@keyframes zero-frames {
+  from {
+    background-position-x: 0%;
+  }
+
+  to {
+    background-position-x: calc(var(--zero-frames) * 100% / (var(--zero-frames) - 1));
+  }
+}
+
+/* A closed case does not fidget. */
+.zero-sprite[data-state="closed"] {
+  animation: none;
+  opacity: 0.7;
+}
+
+/* On narrow screens the key hints run the full width, so Zero stands above them. */
+@media (max-width: 820px) {
+  .zero-sprite {
+    bottom: 82px;
+    left: 24px;
+    width: 44px;
+  }
+}
+
+@media (max-width: 520px) {
+  .zero-sprite {
+    bottom: 78px;
+    left: 20px;
+    width: 38px;
+  }
+}
