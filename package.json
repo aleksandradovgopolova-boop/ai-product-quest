@@ -18,7 +18,7 @@
     "report:cohort": "tsx scripts/cohort-report.mts",
     "ai:onboard": "python3 .ai/managed/tools/ai_ops_cli.py onboard .",
     "ai:status": "python3 .ai/managed/tools/ai_ops_cli.py status .",
-    "ai:validate": "python3 .ai/managed/validation/validate_ai_ops_child.py . && python3 .ai/managed/validation/validate_ai_first_registry.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_workflows.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_providers.py .ai/managed && python3 .ai/managed/validation/validate_event_catalog.py .ai/project/contracts/events.yaml --scan src/domain/campaign/types.ts,src/application/chapter-runner/chapterRunner.ts,src/engines/projection/projectCampaign.ts",
+    "ai:validate": "PYTHONDONTWRITEBYTECODE=1 python3 .ai/managed/validation/validate_ai_ops_child.py . && python3 .ai/managed/validation/validate_ai_first_registry.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_workflows.py .ai/managed && python3 .ai/managed/validation/validate_ai_first_providers.py .ai/managed && python3 .ai/managed/validation/validate_event_catalog.py .ai/project/contracts/events.yaml --scan src/domain/campaign/types.ts,src/application/chapter-runner/chapterRunner.ts,src/engines/projection/projectCampaign.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern test-results --ignore-pattern playwright-report --ignore-pattern .tmp",
     "db:generate": "drizzle-kit generate"

@@ -15,7 +15,6 @@
         "properties": {
           "id": { "type": "string", "minLength": 1 },
           "stepIndex": { "type": "integer", "minimum": 1 },
-          "time": { "type": "string" },
           "tone": { "enum": ["normal", "error", "success", "codex"] },
           "visual": { "enum": ["context", "signal"] },
           "chrome": { "enum": ["bare", "system"] },

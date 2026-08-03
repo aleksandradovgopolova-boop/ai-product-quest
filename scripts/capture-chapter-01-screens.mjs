@@ -17,12 +17,12 @@ const prologuePath = [
   { advance: true, expect: "Что создаёт хороший продукт?" },
   { choose: "Я не знаю." },
   { advance: true, expect: "Знаешь, что меня всегда удивляет?" },
-  { advance: true, expect: "Поэтому здесь всё устроено" },
+  { advance: true, expect: "Поэтому здесь всё устроено немного иначе." },
   { choose: "Продолжить" },
   { choose: "Искать проблему." },
   { advance: true, expect: "AI Product Quest" },
   // The title card advances itself; pressing a key here would skip mission-handoff.
-  { await: "Люди редко ошибаются потому," },
+  { await: "Люди редко ошибаются потому, что плохо думают." },
   { advance: true, expect: "Открываю рабочий контур..." },
   { advance: true, expect: "Система подготовила отчёт." },
 ];

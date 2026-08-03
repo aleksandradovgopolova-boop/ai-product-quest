@@ -116,13 +116,13 @@ async function completeChapterOne(page: Page) {
   // The prologue answer must come back as Zero's own line, not only as an event.
   await expectScene(page, "«не знаю».");
   await advanceAnyInput(page, "Знаешь, что меня всегда удивляет?");
-  await advanceAnyInput(page, "Поэтому здесь всё устроено");
+  await advanceAnyInput(page, "Поэтому здесь всё устроено немного иначе.");
   await choose(page, "Продолжить");
   await choose(page, "Искать проблему.");
   await expectScene(page, "Начинать ты будешь так: «искать проблему».");
   await page.waitForTimeout(320);
   await advanceToTitle(page);
-  await advanceAnyInput(page, "Люди редко ошибаются потому,");
+  await advanceAnyInput(page, "Люди редко ошибаются потому, что плохо думают.");
   await advanceAnyInput(page, "Открываю рабочий контур...");
   await advanceAnyInput(page, "Система подготовила отчёт.");
   await choose(page, "Продолжить");
@@ -207,6 +207,7 @@ async function assertViewportIntegrity(page: Page) {
         const rect = element.getBoundingClientRect();
         return {
           bottom: rect.bottom,
+          element,
           height: rect.height,
           left: rect.left,
           right: rect.right,
@@ -226,6 +227,12 @@ async function assertViewportIntegrity(page: Page) {
       for (let nextIndex = index + 1; nextIndex < rects.length; nextIndex += 1) {
         const first = rects[index];
         const second = rects[nextIndex];
+
+        // The progress rail sits inside the topbar; a box holding another is not a collision.
+        if (first.element.contains(second.element) || second.element.contains(first.element)) {
+          continue;
+        }
+
         const horizontal = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
         const vertical = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
 

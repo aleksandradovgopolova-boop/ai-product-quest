@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 export function SystemFrame() {
@@ -11,7 +12,22 @@ export function SystemFrame() {
   );
 }
 
-export function SystemTopbar({ caseShort, caseSummary, caseTitle }: { caseShort: string; caseSummary: string; caseTitle: string }) {
+/**
+ * `children` is the case progress rail. It sits beside the active case rather than at the
+ * foot of the screen: both answer "where in the case am I", and split across the viewport
+ * they read as two unrelated HUD elements.
+ */
+export function SystemTopbar({
+  caseShort,
+  caseSummary,
+  caseTitle,
+  children,
+}: {
+  caseShort: string;
+  caseSummary: string;
+  caseTitle: string;
+  children?: ReactNode;
+}) {
   return (
     <header className="system-topbar">
       <div className="system-topbar-row">
@@ -21,19 +37,13 @@ export function SystemTopbar({ caseShort, caseSummary, caseTitle }: { caseShort:
           <span className="system-case-short">{caseShort}</span>
         </span>
       </div>
-      <div className="system-case-brief">
-        <span>АКТИВНОЕ ДЕЛО</span>
-        <strong>{caseSummary}</strong>
+      <div className="system-topbar-lower">
+        <div className="system-case-brief">
+          <span>АКТИВНОЕ ДЕЛО</span>
+          <strong>{caseSummary}</strong>
+        </div>
+        {children}
       </div>
-    </header>
-  );
-}
-
-export function SystemClock({ value }: { value: string }) {
-  return (
-    <header className="flow-time">
-      <span>{value}</span>
-      <i aria-hidden="true" />
     </header>
   );
 }
