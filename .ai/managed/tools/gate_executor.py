@@ -165,10 +165,39 @@ def deterministic_run(validator):
         status = "pass" if refs and claims else "fail"
         return status, checks, [c["id"] for c in checks if c["status"] == "pass"]
     if validator == "validate-freshness":
-        ok = _run_validator("validate_freshness.py", "--selftest")
-        checks = [{"id": "no_stale_volatile_docs", "status": "pass" if ok else "warn"}]
-        return ("pass" if ok else "warn"), checks, [c["id"] for c in checks if c["status"] == "pass"]
+        return _freshness_run()
     return None
+
+
+def _freshness_run(base=None):
+    """v3.12.0 Startup Context Budget: freshness-гейт проверяет контекст РЕПОЗИТОРИЯ
+    (.ai/project/context, + .ai/custom/context), а НЕ --selftest самого кита (тот остаётся отдельной
+    проверкой в CI кита). Протухший volatile / нет reviewed_at у размеченного документа -> WARN с
+    именами файлов и сроками (имена вшиты в id проверки, чтобы попасть в machine-readable отчёт).
+    Отсутствие контекста репозитория -> WARN (пробел виден, не молчаливый pass)."""
+    b = Path(base) if base else Path.cwd()
+    roots = [b / rel for rel in (".ai/project/context", ".ai/custom/context")]
+    roots = [r for r in roots if r.is_dir()]
+    if not roots:
+        checks = [{"id": "repo_context_present:.ai/project/context отсутствует", "status": "warn"}]
+        return "warn", checks, []
+    checks = []
+    for r in roots:
+        proc = subprocess.run([sys.executable, str(PKG / "validation" / "validate_freshness.py"),
+                               str(r), "--json"], capture_output=True, text=True)
+        try:
+            rep = json.loads(proc.stdout)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        for item in rep.get("results", []):
+            if item["status"] == "stale":
+                checks.append({"id": f"stale:{item['path']} — {item['detail']}", "status": "warn"})
+            elif item["status"] == "no-review-date":
+                checks.append({"id": f"no_review_date:{item['path']} — {item['detail']}", "status": "warn"})
+    if not checks:
+        checks = [{"id": "no_stale_volatile_docs", "status": "pass"}]
+    status = "warn" if any(c["status"] == "warn" for c in checks) else "pass"
+    return status, checks, [c["id"] for c in checks if c["status"] == "pass"]
 
 # ключи, разрешённые схемой gate-result (additionalProperties: false)
 _ALLOWED_KEYS = {
@@ -280,6 +309,21 @@ def evaluate_gate(gate_id: str, gate: dict, evidence: dict, tested_revision=None
     blocking = bool(gate.get("blocking"))
     required = gate.get("required_evidence", []) or []
     ev = dict((evidence or {}).get(gate_id) or {})
+
+    # v3.15.0 Architecture Baseline: гейт с `required_when` применим ТОЛЬКО когда активен хотя бы один
+    # объявленный сигнал (напр. architecture_review — на architecture_change/new_service/…). Иначе —
+    # ЧЕСТНЫЙ non-blocking skip (scope=not_applicable, записан в warnings), не тихий pass и не блок.
+    rw = gate.get("required_when") or []
+    if rw and not any((signals or {}).get(s) for s in rw):
+        return {
+            "schema_version": 1, "gate": gate_id, "status": "pass", "blocking": False,
+            "scope": ["not_applicable"], "checks": [], "blockers": [],
+            "warnings": [f"гейт неприменим: нет ни одного сигнала {rw} — не оценивался (honest skip)"],
+            "evidence": [], "tested_revision": tested_revision,
+            "owner": gate.get("responsible_role", "unknown"),
+            "review_mode": gate.get("review_mode", "read-only"),
+            "created_at": None, "expires_at": None, "override": None,
+        }
 
     # авто-исполнение детерминированного валидатора, если evidence не подан
     if not ev.get("status") and kind == "deterministic":
@@ -483,6 +527,39 @@ def selftest():
            run is not None and run[0] == "pass")
     expect("символический валидатор не выдумывает вердикт (нужен evidence)",
            deterministic_run("validate-intake") is None)
+
+    # 3d2. v3.15.0: гейт с required_when применим только при архитектурном сигнале
+    _arch_gate = {"id": "architecture_review", "blocking": True, "review_mode": "read-only",
+                  "responsible_role": "architecture-reviewer",
+                  "required_when": ["architecture_change", "data_migration"]}
+    r_na = evaluate_gate("architecture_review", _arch_gate, {}, signals={})
+    expect("architecture_review без сигнала -> not_applicable, не блок",
+           r_na["status"] == "pass" and r_na["blocking"] is False and "not_applicable" in r_na.get("scope", []))
+    r_active = evaluate_gate("architecture_review", _arch_gate, {}, signals={"data_migration": True})
+    expect("architecture_review при сигнале + без evidence -> fail (обязательный судья)",
+           r_active["status"] == "fail" and r_active["blocking"] is True)
+
+    # 3d. v3.12.0: freshness-гейт проверяет контекст РЕПОЗИТОРИЯ (не селфтест кита)
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        ctx = Path(td) / ".ai/project/context"
+        ctx.mkdir(parents=True)
+        (ctx / "ProductStatus.md").write_text(
+            "---\nstability: volatile\nreviewed_at: 2020-01-01\n---\n# stale\n", encoding="utf-8")
+        st, checks, _ = _freshness_run(td)
+        expect("freshness: протухший ProductStatus.md репо -> warn + имя файла",
+               st == "warn" and any("stale:ProductStatus.md" in c["id"] for c in checks))
+    with tempfile.TemporaryDirectory() as td:
+        ctx = Path(td) / ".ai/project/context"
+        ctx.mkdir(parents=True)
+        (ctx / "ProductStatus.md").write_text(
+            "---\nstability: volatile\nreviewed_at: 2999-01-01\n---\n# fresh\n", encoding="utf-8")
+        st, _, _ = _freshness_run(td)
+        expect("freshness: свежий контекст репо -> pass", st == "pass")
+    with tempfile.TemporaryDirectory() as td:
+        st, checks, _ = _freshness_run(td)
+        expect("freshness: нет контекста репо -> warn (пробел виден)",
+               st == "warn" and any("repo_context_present" in c["id"] for c in checks))
 
     # 4. частичный evidence -> всё ещё blocked по недостающему гейту
     r2 = evaluate("QUICK", {"intake_completeness": {"status": "pass",
