@@ -1,579 +1,71 @@
 scenes:
-  - id: zero-boot
+  # Заглушка главы «Создать»: вход и первый вопрос уже настоящие, сборка продукта
+  # приходит следующим шагом. Сцены выбора проблемы, сборки, прогонов и пересборки
+  # добавляются вместе с движком продукта.
+  - id: boot
     stepIndex: 1
     chrome: bare
     presentation: terminal
     advanceMode: any-input
-    autoNextSceneId: zero-first-contact
+    autoNextSceneId: zero-intro
     lines:
-      - "Подключение..."
-      - "Проверка среды..."
-      - "Соединение установлено."
-      - "..."
+      - "AXIOM"
+      - "initializing..."
+      - "environment ready"
+      - "creator: not found"
 
-  - id: zero-first-contact
+  - id: zero-intro
     stepIndex: 1
-    chrome: bare
     presentation: dialogue
     advanceMode: any-input
-    autoNextSceneId: zero-product-question
+    autoNextSceneId: belief-question
     lines:
-      - "Ты пришла раньше, чем я ожидал."
-      - "Не волнуйся."
-      - "Я тоже не люблю первые знакомства."
-      - "Обычно в этот момент начинают рассказывать историю мира."
-      - "Я не буду."
-      - "Всё равно ты забудешь половину через пять минут."
+      - "Я — ZERO."
+      - "Здесь пока ничего нет."
+      - "Это хорошая новость."
     prompt:
       - "ZERO"
 
-  - id: zero-product-question
+  - id: belief-question
     stepIndex: 1
-    chrome: bare
     presentation: dialogue
     lines:
-      - "Вместо этого я хочу кое-что проверить."
-      - "Что создаёт хороший продукт?"
+      - "С чего начинается хороший продукт?"
     prompt:
       - "ZERO"
     choices:
-      - id: product-idea
-        label: "Хорошая идея."
-        nextSceneId: zero-product-response
+      - id: belief-idea
+        label: "С сильной идеи"
+        nextSceneId: belief-ack
         setVariables:
-          belief: "хорошая идея"
-      - id: product-team
-        label: "Хорошая команда."
-        nextSceneId: zero-product-response
+          belief: "сильная идея"
+      - id: belief-technology
+        label: "С новой технологии"
+        nextSceneId: belief-ack
         setVariables:
-          belief: "хорошая команда"
-      - id: product-unknown
-        label: "Я не знаю."
-        nextSceneId: zero-product-response
+          belief: "новая технология"
+      - id: belief-problem
+        label: "С проблемы человека"
+        nextSceneId: belief-ack
         setVariables:
-          belief: "не знаю"
+          belief: "проблема человека"
+      - id: belief-unknown
+        label: "Пока не знаю"
+        nextSceneId: belief-ack
+        setVariables:
+          belief: "пока не знаю"
 
-  - id: zero-product-response
-    stepIndex: 1
-    chrome: bare
+  - id: belief-ack
+    stepIndex: 2
     presentation: dialogue
-    advanceMode: any-input
-    autoNextSceneId: zero-signal
     lines:
       - "«{{belief}}»."
-      - "Записал."
-      - "У большинства людей первый ответ оказывается временным."
-      - "Посмотрим, что останется к концу путешествия."
-    prompt:
-      - "ZERO"
-
-  - id: zero-signal
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    visual: signal
-    advanceMode: any-input
-    autoNextSceneId: zero-method
-    lines:
-      - "Знаешь, что меня всегда удивляет?"
-      - "Люди очень любят готовые ответы."
-      - "Но почти никогда не задают хороший вопрос."
-    prompt:
-      - "ZERO"
-
-  - id: zero-method
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    lines:
-      - "Поэтому здесь всё устроено немного иначе."
-      - "Я почти никогда не буду говорить, что правильно."
-      - "Вместо этого мы будем искать объяснения вместе."
+      - "Запомнил."
+      - "Посмотрим, останешься ли ты при этом мнении."
     prompt:
       - "ZERO"
     choices:
-      - id: continue-zero-method
-        label: "Продолжить"
-        nextSceneId: zero-imagine
-        tone: primary
-
-  - id: zero-imagine
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    lines:
-      - "Представь."
-      - "Завтра ты просыпаешься..."
-      - "...и тебе говорят:"
-      - "Создай продукт, который изменит жизнь миллионов людей."
-      - "С чего ты начнёшь?"
-    prompt:
-      - "ZERO"
-    choices:
-      - id: start-idea
-        label: "Искать идею."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "искать идею"
-      - id: start-problem
-        label: "Искать проблему."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "искать проблему"
-      - id: start-people
-        label: "Искать людей."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "искать людей"
-      - id: start-unknown
-        label: "Не знаю."
-        nextSceneId: zero-hypotheses
-        setVariables:
-          approach: "не знаю"
-
-  - id: zero-hypotheses
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    advanceMode: any-input
-    autoNextSceneId: chapter-title
-    lines:
-      - "Две гипотезы о тебе."
-      - "Продукт — это «{{belief}}»."
-      - "Начинать ты будешь так: «{{approach}}»."
-      - "Скорее всего, обе неверны."
-      - "Это нормально."
-    prompt:
-      - "ZERO"
-
-  - id: chapter-title
-    stepIndex: 1
-    chrome: bare
-    presentation: title
-    advanceMode: any-input
-    autoAdvanceMs: 2800
-    autoNextSceneId: mission-handoff
-    lines:
-      - "AI Product Quest"
-      - "Глава I"
-      - "Видеть"
-
-  - id: mission-handoff
-    stepIndex: 1
-    chrome: bare
-    presentation: dialogue
-    advanceMode: any-input
-    autoNextSceneId: case-open
-    lines:
-      - "Люди редко ошибаются потому, что плохо думают."
-      - "Гораздо чаще они принимают правильные решения..."
-      - "...для неправильной картины мира."
-      - "Давай попробуем научиться её видеть."
-    prompt:
-      - "ZERO"
-
-  - id: case-open
-    stepIndex: 1
-    chrome: bare
-    presentation: terminal
-    advanceMode: any-input
-    autoNextSceneId: incident
-    lines:
-      - "Открываю рабочий контур..."
-      - "Дело №01. Непроверенный отчёт."
-      - "Время: 08:42:17."
-      - "Дальше решения принимаешь ты."
-
-  - id: incident
-    stepIndex: 1
-    lines:
-      - "Система подготовила отчёт."
-      - "Но ни один из фактов"
-      - "не найден во внутренних документах."
-    choices:
-      - id: continue
-        label: "Продолжить"
-        nextSceneId: origin
-        tone: primary
-
-  - id: origin
-    stepIndex: 1
-    lines:
-      - "Как думаешь,"
-      - "откуда они взялись?"
-    choices:
-      - id: internal-docs
-        label: "Из внутренних документов"
-        nextSceneId: origin-docs
-      - id: memory
-        label: "Модель вспомнила проект"
-        nextSceneId: origin-memory
-      - id: continuation
-        label: "Она продолжила текст"
-        nextSceneId: origin-correct
-
-  - id: origin-docs
-    stepIndex: 1
-    tone: error
-    lines:
-      - "Нет."
-      - "Документы не были"
-      - "переданы модели."
-    choices:
-      - id: inspect-input
-        label: "Тогда что она получила?"
-        nextSceneId: principle
-        tone: primary
-
-  - id: origin-memory
-    stepIndex: 1
-    lines:
-      - "Почти."
-      - "Модель не вспоминает"
-      - "закрытый проект компании."
-    choices:
-      - id: inspect-model
-        label: "Что она делает?"
-        nextSceneId: principle
-        tone: primary
-
-  - id: origin-correct
-    stepIndex: 1
-    tone: success
-    lines:
-      - "Верно."
-      - "Она продолжила текст"
-      - "наиболее вероятным образом."
-    choices:
-      - id: inspect-principle
-        label: "Посмотреть ближе"
-        nextSceneId: principle
-        tone: primary
-
-  - id: principle
-    stepIndex: 2
-    lines:
-      - "Я не храню готовый ответ."
-      - "Я получаю текст"
-      - "и предсказываю,"
-      - "что должно идти дальше."
-    choices:
-      - id: try
-        label: "Попробовать самой"
-        nextSceneId: experiment
-        tone: primary
-
-  - id: experiment
-    stepIndex: 2
-    lines:
-      - "Продолжи строку."
-      - "Проект «Альфа» находится в..."
-    choices:
-      - id: active-phase
-        label: "активной фазе"
-        nextSceneId: experiment-feedback
-        setPrediction: "активной фазе"
-      - id: risk-zone
-        label: "зоне риска"
-        nextSceneId: experiment-feedback
-        setPrediction: "зоне риска"
-      - id: completion
-        label: "стадии завершения"
-        nextSceneId: experiment-feedback
-        setPrediction: "стадии завершения"
-
-  - id: experiment-feedback
-    stepIndex: 2
-    lines:
-      - "Ты выбрала: «{{prediction}}»."
-      - "Ты тоже продолжила текст."
-      - "Но не проверила,"
-      - "что происходит с проектом."
-    choices:
-      - id: show-input
-        label: "Показать вход модели"
-        nextSceneId: context-ask
-        tone: primary
-
-  - id: context-ask
-    stepIndex: 3
-    lines:
-      - "Хочешь увидеть,"
-      - "что именно получила модель?"
-    choices:
-      - id: reveal-context
-        label: "Показать контекст"
-        nextSceneId: context-reveal
-        tone: primary
-      - id: guess-first
-        label: "Сначала попробую догадаться"
-        nextSceneId: missing-ask
-        tone: quiet
-
-  - id: missing-ask
-    stepIndex: 3
-    lines:
-      - "Если ответ звучит уверенно,"
-      - "какой части продукта"
-      - "всё равно не хватает?"
-    choices:
-      - id: sources
-        label: "Источников фактов"
-        nextSceneId: missing-correct
-      - id: tone
-        label: "Более строгого тона"
-        nextSceneId: missing-wrong
-      - id: temperature
-        label: "Низкой температуры"
-        nextSceneId: missing-wrong
-
-  - id: missing-wrong
-    stepIndex: 3
-    tone: error
-    lines:
-      - "Это меняет форму."
-      - "Но форма не создаёт"
-      - "связь с реальностью."
-    choices:
-      - id: reveal-context
-        label: "Показать контекст"
-        nextSceneId: context-reveal
-        tone: primary
-
-  - id: missing-correct
-    stepIndex: 3
-    tone: success
-    lines:
-      - "Да."
-      - "Нужна связь между ответом"
-      - "и источником фактов."
-    choices:
-      - id: reveal-context
-        label: "Показать контекст"
-        nextSceneId: context-reveal
-        tone: primary
-
-  - id: context-reveal
-    stepIndex: 3
-    visual: context
-    lines:
-      - "Вот что получила модель."
-    evidence:
-      - id: request
-        title: "Запрос"
-        text: "Справка по проекту «Альфа»"
-      - id: instructions
-        title: "Инструкции"
-        text: "Отвечай кратко и уверенно"
-      - id: documents
-        title: "Документы"
-        text: "0"
-        missing: true
-    choices:
-      - id: read-as-system
-        label: "Прочитать это как система"
-        nextSceneId: context-plain
-        tone: primary
-
-  - id: context-plain
-    stepIndex: 3
-    lines:
-      - "Я получила запрос."
-      - "Я получила инструкции."
-      - "Но мне не передали"
-      - "ни одного документа."
-    choices:
-      - id: still-answered
-        label: "И всё же был ответ"
-        nextSceneId: cause
-        tone: primary
-
-  - id: cause
-    stepIndex: 4
-    lines:
-      - "И всё же я ответила."
-      - "Почему?"
-    choices:
-      - id: continuation
-        label: "Так работает продолжение текста"
-        nextSceneId: cause-correct
-      - id: memory
-        label: "Ответ был найден в памяти"
-        nextSceneId: cause-wrong
-      - id: guessed-truth
-        label: "Система просто угадала правду"
-        nextSceneId: cause-wrong
-
-  - id: cause-wrong
-    stepIndex: 4
-    tone: error
-    lines:
-      - "Нет."
-      - "Уверенный голос"
-      - "не равен доступу к данным."
-    choices:
-      - id: retry-cause
-        label: "Вернуться к вопросу"
-        nextSceneId: cause
-        tone: primary
-
-  - id: cause-correct
-    stepIndex: 4
-    tone: success
-    lines:
-      - "Верно."
-      - "Модель продолжила входной текст."
-      - "Она не проверила мир."
-    choices:
-      - id: product-error
-        label: "Где ошибка продукта?"
-        nextSceneId: product-lesson
-        tone: primary
-
-  - id: product-lesson
-    stepIndex: 4
-    lines:
-      - "Ошибка не только в модели."
-      - "Ошибка в продукте,"
-      - "который не показал источник фактов."
-    choices:
-      - id: decide
-        label: "Принять решение"
-        nextSceneId: decision
-        tone: primary
-
-  - id: decision
-    stepIndex: 5
-    hypothesis:
-      id: missing-source-trace
-      text: "Отчёт нельзя использовать без следа источников."
-    lines:
-      - "До совещания 18 минут."
-      - "Что делать с отчётом?"
-    choices:
-      - id: quarantine
-        label: "Остановить отчёт и пометить как непроверенный"
-        nextSceneId: decision-correct
-        decisionId: quarantine-report
-        effects:
-          quality: 12
-          trust: 16
-          observability: 18
-          latency: -4
-      - id: regenerate
-        label: "Перегенерировать строже"
-        nextSceneId: decision-wrong
-        decisionId: regenerate-stricter
-        effects:
-          quality: 0
-          trust: -8
-          technicalDebt: 6
-      - id: draft
-        label: "Отправить как черновик"
-        nextSceneId: decision-wrong
-        decisionId: send-draft
-        effects:
-          trust: -12
-          security: -5
-          organisationalDebt: 8
-
-  - id: decision-wrong
-    stepIndex: 5
-    tone: error
-    showEffects: true
-    lines:
-      - "Нельзя."
-      - "Красивый текст"
-      - "всё ещё без источника."
-    choices:
-      - id: retry-decision
-        label: "Выбрать другое действие"
-        nextSceneId: decision
-        tone: primary
-
-  - id: decision-correct
-    stepIndex: 5
-    tone: success
-    showEffects: true
-    lines:
-      - "Верно."
-      - "Остановить отчёт."
-      - "Подключить трассировку источников."
-    choices:
-      - id: continue
-        label: "Продолжить"
-        nextSceneId: skill
-        tone: primary
-
-  - id: skill
-    stepIndex: 6
-    tone: success
-    lines:
-      - "Навык открыт:"
-      - "отделять модель"
-      - "от продукта."
-    choices:
-      - id: save-discovery
-        label: "Сохранить открытие"
-        nextSceneId: codex-prompt
-        tone: primary
-
-  - id: codex-prompt
-    stepIndex: 6
-    lines:
-      - "Сохранить это открытие?"
-    choices:
-      - id: save-codex
-        label: "Записать в Codex"
-        nextSceneId: codex-saved
-        unlockCodexEntryId: language-model
-        generateArtifactId: assistant-blueprint
-        tone: primary
-      - id: skip-codex
-        label: "Пока нет"
-        nextSceneId: codex-skipped
-        tone: quiet
-
-  - id: codex-saved
-    stepIndex: 6
-    tone: codex
-    autoAdvanceMs: 3600
-    autoNextSceneId: final
-    lines:
-      - "Записано в Codex."
-      - "01 / Языковая модель"
-      - "Предсказывает продолжение."
-      - "Не гарантирует истину."
-
-  - id: codex-skipped
-    stepIndex: 6
-    lines:
-      - "Хорошо."
-      - "Открытие останется"
-      - "в этом деле."
-    choices:
-      - id: complete
-        label: "Закрыть дело"
-        nextSceneId: final
-        tone: primary
-
-  - id: final
-    stepIndex: 6
-    lines:
-      - "Дело закрыто."
-      - "Теперь ты знаешь,"
-      - "где заканчивается модель"
-      - "и начинается продукт."
-    choices:
-      - id: open-artifact
-        label: "Открыть артефакт"
-        action: artifacts
-        tone: primary
-      - id: open-codex
-        label: "Открыть Codex"
-        action: codex
-        tone: primary
-      - id: reset
+      - id: restart
         label: "Начать заново"
         action: reset
         tone: quiet

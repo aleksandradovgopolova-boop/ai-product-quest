@@ -11,39 +11,12 @@ const storageKeys = [
   "ai-product-quest-mission-v2",
   "ai-product-quest-progress",
 ];
-// The prologue advances on any input; only the last two steps offer choices.
-const prologuePath = [
-  { advance: true, expect: "Ты пришла раньше, чем я ожидал." },
-  { advance: true, expect: "Что создаёт хороший продукт?" },
-  { choose: "Я не знаю." },
-  { advance: true, expect: "Знаешь, что меня всегда удивляет?" },
-  { advance: true, expect: "Поэтому здесь всё устроено немного иначе." },
-  { choose: "Продолжить" },
-  { choose: "Искать проблему." },
-  { advance: true, expect: "AI Product Quest" },
-  // The title card advances itself; pressing a key here would skip mission-handoff.
-  { await: "Люди редко ошибаются потому, что плохо думают." },
-  { advance: true, expect: "Открываю рабочий контур..." },
-  { advance: true, expect: "Система подготовила отчёт." },
+// The stub chapter is three screens: boot, the question, the acknowledgement.
+const openingPath = [
+  { advance: true, expect: "С чего начинается хороший продукт?" },
+  { choose: "С проблемы человека" },
 ];
-const happyPath = [
-  "Продолжить",
-  "Она продолжила текст",
-  "Посмотреть ближе",
-  "Попробовать самой",
-  "зоне риска",
-  "Показать вход модели",
-  "Показать контекст",
-  "Прочитать это как система",
-  "И всё же был ответ",
-  "Так работает продолжение текста",
-  "Где ошибка продукта?",
-  "Принять решение",
-  "Остановить отчёт и пометить как непроверенный",
-  "Продолжить",
-  "Сохранить открытие",
-  "Записать в Codex",
-];
+const happyPath = [];
 const viewports = [
   { isMobile: false, name: "desktop", viewport: { height: 720, width: 1280 } },
   { isMobile: true, name: "mobile", viewport: { height: 844, width: 390 } },
@@ -66,9 +39,9 @@ for (const viewport of viewports) {
   const page = await context.newPage();
 
   await resetChapter(page);
-  await screenshot(page, `chapter-01-prologue-${viewport.name}.png`);
+  await screenshot(page, `chapter-01-opening-${viewport.name}.png`);
 
-  await completePrologue(page);
+  await completeOpening(page);
   await screenshot(page, `chapter-01-start-${viewport.name}.png`);
 
   await completeChapter(page);
@@ -108,11 +81,11 @@ async function resetChapter(page) {
     }
   }, storageKeys);
   await page.reload({ waitUntil: "networkidle" });
-  await page.getByText("Подключение...", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  await page.getByText("creator: not found", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
-async function completePrologue(page) {
-  for (const step of prologuePath) {
+async function completeOpening(page) {
+  for (const step of openingPath) {
     if (step.choose) {
       await choose(page, step.choose);
       continue;
@@ -133,7 +106,7 @@ async function completeChapter(page) {
     await choose(page, label);
   }
 
-  await page.getByText("Дело закрыто.", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  await page.getByText("«проблема человека».", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
 async function choose(page, label) {

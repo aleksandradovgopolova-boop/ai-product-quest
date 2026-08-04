@@ -22,12 +22,12 @@ export function ProfileView({ content }: { content: PlatformContent }) {
         <div className="platform-row">
           <span>SKILL</span>
           <strong>{campaign.engineerProfile.skills[0] ?? "Навык ещё не открыт"}</strong>
-          <em>{campaign.dashboard.currentStepLabel}</em>
+          <em>{campaign.dashboard.currentStageLabel}</em>
         </div>
         <div className="platform-row">
           <span>CASE</span>
-          <strong>{campaign.dashboard.caseTitle}</strong>
-          <em>{campaign.dashboard.currentStepIndex} из {campaign.dashboard.totalSteps}</em>
+          <strong>{campaign.dashboard.chapterTitle}</strong>
+          <em>{campaign.dashboard.currentStageIndex} из {campaign.dashboard.totalStages}</em>
         </div>
       </div>
     </div>

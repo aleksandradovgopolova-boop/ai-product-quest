@@ -1,4 +1,4 @@
-export const campaignStateSchemaVersion = 1;
+export const campaignStateSchemaVersion = 2;
 
 export type SystemMetricKey =
   | "usefulness"
@@ -79,7 +79,7 @@ export type Chapter = {
   summary: string;
   initialSceneId: string;
   initialSystemState: SystemState;
-  caseSteps: string[];
+  stages: string[];
   codexEntryIds: string[];
   artifactIds: string[];
   mechanics: string[];
@@ -175,11 +175,11 @@ export type EngineerProfile = {
 };
 
 export type DashboardProjection = {
-  caseTitle: string;
-  caseSummary: string;
-  currentStepLabel: string;
-  currentStepIndex: number;
-  totalSteps: number;
+  chapterTitle: string;
+  chapterSummary: string;
+  currentStageLabel: string;
+  currentStageIndex: number;
+  totalStages: number;
   completedDecisionCount: number;
   unlockedCodexCount: number;
   artifactCount: number;

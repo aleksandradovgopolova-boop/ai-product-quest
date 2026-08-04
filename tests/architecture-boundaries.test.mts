@@ -50,6 +50,11 @@ test("engines do not import UI, app routes, or infrastructure", async () => {
 test("content remains data-only YAML outside src", async () => {
   const files = await readContentFiles();
   const offenders = files.filter((file) => {
+    // The archive of replaced chapters may carry a README explaining why it is kept.
+    if (file.projectPath.startsWith("content/legacy/") && file.projectPath.endsWith(".md")) {
+      return false;
+    }
+
     const extension = path.extname(file.projectPath);
     return ![".yml", ".yaml"].includes(extension) || /\b(import|export|from\s+["']react["'])\b/.test(file.source);
   });

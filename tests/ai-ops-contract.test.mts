@@ -75,7 +75,7 @@ test("legacy campaign.reset events remain projectable for existing local saves",
   ]);
 
   assert.equal(projected.currentChapterId, "chapter-01");
-  assert.equal(projected.currentSceneId, "zero-boot");
+  assert.equal(projected.currentSceneId, "boot");
   assert.equal(projected.system.lastMessage, "Кампания сброшена");
 });
 

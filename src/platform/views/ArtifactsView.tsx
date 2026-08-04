@@ -9,7 +9,7 @@ export function ArtifactsView({ content }: { content: PlatformContent }) {
   return (
     <div className="platform-screen" data-route="artifacts">
       <div className="platform-copy">
-        <span className="platform-kicker">АРХИВ ДЕЛА</span>
+        <span className="platform-kicker">АРХИВ РЕШЕНИЙ</span>
         <h1>След решений</h1>
         <p>Артефакты строятся проекцией Event Log и появляются только после действий внутри дела.</p>
       </div>
@@ -26,7 +26,7 @@ export function ArtifactsView({ content }: { content: PlatformContent }) {
           <div className="platform-row">
             <span>00</span>
             <strong>Артефактов пока нет</strong>
-            <em>закрой первое дело, чтобы система собрала документ</em>
+            <em>собери первый продукт, чтобы система собрала документ</em>
           </div>
         )}
       </div>

@@ -21,10 +21,10 @@ export type SessionReport = {
   startedAt?: string;
   lastEventAt?: string;
   elapsedMs?: number;
-  prologue: {
+  opening: {
     completed: boolean;
-    reachedIncident: boolean;
-    abandonedBeforeIncident: boolean;
+    reachedBuild: boolean;
+    abandonedBeforeBuild: boolean;
     answers: Record<string, string>;
     elapsedMs?: number;
   };
@@ -52,7 +52,11 @@ export type SessionReport = {
   notInstrumented: string[];
 };
 
-const incidentSceneId = "incident";
+/**
+ * The first milestone of the chapter: the player answered ZERO and moved past the intro.
+ * It moves to the assembly scene once the product build lands.
+ */
+const buildStartSceneId = "belief-ack";
 const finalSceneId = "final";
 
 /** The one decision that holds the report back until a source exists. */
@@ -113,7 +117,7 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
 
   const startedAt = events[0]?.occurredAt;
   const lastEventAt = events.at(-1)?.occurredAt;
-  const incidentAt = firstSceneEntryAt(sceneEntries, incidentSceneId);
+  const buildStartedAt = firstSceneEntryAt(sceneEntries, buildStartSceneId);
 
   // Read attempts from the log, not from state.decisions: that record is keyed by
   // decisionId, so a retry overwrites nothing and the order of attempts is lost.
@@ -134,12 +138,12 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
     startedAt,
     lastEventAt,
     elapsedMs: durationMs(startedAt, lastEventAt),
-    prologue: {
-      completed: Boolean(incidentAt),
-      reachedIncident: Boolean(incidentAt),
-      abandonedBeforeIncident: !incidentAt,
+    opening: {
+      completed: Boolean(buildStartedAt),
+      reachedBuild: Boolean(buildStartedAt),
+      abandonedBeforeBuild: !buildStartedAt,
       answers,
-      elapsedMs: durationMs(startedAt, incidentAt),
+      elapsedMs: durationMs(startedAt, buildStartedAt),
     },
     scenesEntered: sceneEntries.length,
     uniqueScenesEntered: seenScenes.size,

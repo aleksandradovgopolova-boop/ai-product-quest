@@ -4,14 +4,27 @@ artifacts:
     title: "Assistant Blueprint"
     format: markdown
     sections:
+      - id: user
+        title: "Пользователь"
       - id: problem
         title: "Проблема"
+      - id: outcome
+        title: "Ожидаемый результат"
       - id: model
         title: "Роль модели"
       - id: context
-        title: "Контекст и источники"
-      - id: decision
-        title: "Принятое решение"
-      - id: risks
-        title: "Риски и проверки"
-
+        title: "Контекст"
+      - id: tools
+        title: "Инструменты"
+      - id: boundaries
+        title: "Ограничения"
+      - id: verification
+        title: "Проверка"
+      - id: first-version
+        title: "Первая версия"
+      - id: weaknesses
+        title: "Слабые места"
+      - id: revisions
+        title: "Два изменения"
+      - id: tradeoffs
+        title: "Компромиссы"

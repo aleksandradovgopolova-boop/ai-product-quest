@@ -1,0 +1,38 @@
+id: chapter-01
+seasonId: season-01
+number: 1
+title: "Дело №01: Непроверенный отчёт"
+summary: "Корпоративный отчёт содержит неподтверждённые сведения."
+initialSceneId: incident-call
+initialSystemState:
+  usefulness: 42
+  quality: 38
+  latency: 72
+  cost: 20
+  trust: 31
+  resilience: 35
+  adaptability: 44
+  maintainability: 40
+  observability: 24
+  security: 46
+  technicalDebt: 18
+  organisationalDebt: 22
+caseSteps:
+  - "Отчёт получен"
+  - "Проверить модель"
+  - "Вскрыть контекст"
+  - "Найти источник"
+  - "Принять решение"
+  - "Закрыть дело"
+codexEntryIds:
+  - language-model
+artifactIds:
+  - assistant-blueprint
+mechanics:
+  - dialogue
+  - investigation
+  - decision
+  - simulation
+  - projection
+  - codex
+  - artifact

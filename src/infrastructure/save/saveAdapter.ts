@@ -20,6 +20,13 @@ export function loadCampaignState(content: PlatformContent, storage: StorageAdap
       return projectCampaign(content, parsed.eventLog);
     }
 
+    const rebuilt = migrateReplacedChapter(content, current, occurredAt);
+
+    if (rebuilt) {
+      saveCampaignState(storage, rebuilt);
+      return rebuilt;
+    }
+
     storage.removeItem(campaignStorageKey);
   }
 
@@ -92,7 +99,7 @@ function migrateLegacyPayload(content: PlatformContent, legacyKey: string, raw: 
   const nestedState = isRecord(legacy.state) ? legacy.state : undefined;
   const legacyProgress = isRecord(nestedState?.progress) ? nestedState?.progress : undefined;
   const legacyEpisode = isRecord(legacyProgress?.episodes) ? Object.values(legacyProgress.episodes).find(isRecord) : undefined;
-  const sceneId = pickExistingScene(chapter.sceneById, [
+  const sceneId = pickExistingScene(chapter.sceneById, chapter.initialSceneId, [
     readString(legacy.stepId),
     readString(legacy.sceneId),
     readString(legacy.phase),
@@ -130,6 +137,70 @@ function migrateLegacyPayload(content: PlatformContent, legacyKey: string, raw: 
   return projectCampaign(content, eventLog);
 }
 
+/** Codex entries the player already earned survive a chapter being replaced. */
+const codexEntryMigration: Record<string, string> = {
+  "language-model": "llm-not-product",
+};
+
+/**
+ * A save written before Chapter 01 was replaced points at scenes that no longer exist, so its
+ * log cannot be projected. Rather than dropping the player silently, the run restarts from the
+ * new opening and everything that belongs to the player — unlocked Codex entries — is carried
+ * over, with the migration itself recorded in the log.
+ */
+function migrateReplacedChapter(content: PlatformContent, raw: string, occurredAt: string): CampaignState | undefined {
+  const parsed = safeJson(raw);
+
+  if (!isRecord(parsed) || !Array.isArray(parsed.eventLog)) {
+    return undefined;
+  }
+
+  const carriedEntryIds = new Set<string>();
+
+  for (const event of parsed.eventLog) {
+    if (!isRecord(event) || event.type !== "codex.entry_unlocked" || !isRecord(event.payload)) {
+      continue;
+    }
+
+    const entryId = typeof event.payload.entryId === "string" ? event.payload.entryId : undefined;
+    const migratedId = entryId ? (codexEntryMigration[entryId] ?? entryId) : undefined;
+
+    if (migratedId && content.codexEntryById[migratedId]) {
+      carriedEntryIds.add(migratedId);
+    }
+  }
+
+  const chapter = content.chapters[0];
+
+  if (!chapter) {
+    return undefined;
+  }
+
+  const fresh = createInitialCampaignState(content, chapter.id, occurredAt);
+  const events: GameEvent[] = [...fresh.eventLog];
+
+  events.push(
+    createEvent(fresh.campaignId, events.length + 1, "legacy.save_migrated", occurredAt, {
+      fromKey: campaignStorageKey,
+      chapterId: chapter.id,
+      sceneId: chapter.initialSceneId,
+      codexEntryIds: [...carriedEntryIds],
+      legacyMarked: true,
+    }),
+  );
+
+  for (const entryId of carriedEntryIds) {
+    events.push(
+      createEvent(fresh.campaignId, events.length + 1, "codex.entry_unlocked", occurredAt, {
+        entryId,
+        chapterId: chapter.id,
+      }),
+    );
+  }
+
+  return projectCampaign(content, events);
+}
+
 function parseStoredState(raw: string): StoredCampaignState | undefined {
   const parsed = safeJson(raw);
 
@@ -150,25 +221,27 @@ function collectLegacyCodexEntryIds(legacy: Record<string, unknown>, legacyProgr
 
   for (const id of directIds) {
     if (typeof id === "string") {
-      ids.add(id);
+      ids.add(codexEntryMigration[id] ?? id);
     }
   }
 
   if (legacy.codexUnlocked === true || legacyProgress?.lastArtifactId === "language-model-001") {
-    ids.add("language-model");
+    ids.add(codexEntryMigration["language-model"]);
   }
 
   return Array.from(ids);
 }
 
-function pickExistingScene(sceneById: Record<string, unknown>, candidates: Array<string | undefined>) {
+function pickExistingScene(sceneById: Record<string, unknown>, fallbackSceneId: string, candidates: Array<string | undefined>) {
   for (const candidate of candidates) {
     if (candidate && sceneById[candidate]) {
       return candidate;
     }
   }
 
-  return "incident";
+  // A legacy save can only name scenes of the chapter it was written for. When none of them
+  // survive, the run starts at the chapter's own opening.
+  return fallbackSceneId;
 }
 
 function safeJson(raw: string): unknown {

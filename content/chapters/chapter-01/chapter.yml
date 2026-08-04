@@ -1,9 +1,9 @@
 id: chapter-01
 seasonId: season-01
 number: 1
-title: "Дело №01: Непроверенный отчёт"
-summary: "Корпоративный отчёт содержит неподтверждённые сведения."
-initialSceneId: zero-boot
+title: "Глава I: Создать"
+summary: "Собрать первый AI-продукт внутри AXIOM и увидеть, где заканчивается модель."
+initialSceneId: boot
 initialSystemState:
   usefulness: 42
   quality: 38
@@ -17,22 +17,21 @@ initialSystemState:
   security: 46
   technicalDebt: 18
   organisationalDebt: 22
-caseSteps:
-  - "Отчёт получен"
-  - "Проверить модель"
-  - "Вскрыть контекст"
-  - "Найти источник"
-  - "Принять решение"
-  - "Закрыть дело"
+stages:
+  - "Войти"
+  - "Создать"
+  - "Проверить"
+  - "Пересобрать"
+  - "Запустить"
 codexEntryIds:
-  - language-model
+  - llm-not-product
 artifactIds:
   - assistant-blueprint
 mechanics:
   - dialogue
-  - investigation
-  - decision
-  - simulation
-  - projection
+  - build
+  - simulate
+  - revise
   - codex
   - artifact
+  - zero-pet

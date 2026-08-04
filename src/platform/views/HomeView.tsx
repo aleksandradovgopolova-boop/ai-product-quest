@@ -13,7 +13,7 @@ export function HomeView({ content }: { content: PlatformContent }) {
       </div>
       <div className="platform-actions">
         <Link className="platform-command platform-command-primary" href="/play/chapter-01">
-          Запустить дело
+          Запустить главу
         </Link>
         <Link className="platform-command" href="/journey">
           Карта сезона

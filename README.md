@@ -6,7 +6,7 @@
 Platform → Season → Chapter → Scene
 ```
 
-Игра строится не как лендинг, LMS или SaaS-панель, а как интерфейс компьютерной системы, которая ведёт пользователя через расследование. Первый запуск начинается с пролога First Contact with Zero, затем переходит в Chapter 01.
+Игра строится не как лендинг, LMS или SaaS-панель, а как интерфейс компьютерной системы, которая ведёт пользователя через расследование. Первый запуск начинается с пролога First Contact with ZERO, затем переходит в Chapter 01.
 
 ## Stack
 
@@ -157,8 +157,8 @@ ai-product-quest-progress
 
 Реализовано:
 
-- Chapter 01: `Дело №01: Непроверенный отчёт`;
-- First Contact with Zero: пролог `zero-boot` → `chapter-title` → `mission-handoff`;
+- Chapter 01: `Глава I: Создать`;
+- First Contact with ZERO: пролог `zero-boot` → `chapter-title` → `mission-handoff`;
 - bare-сцены с `advanceMode: any-input` для клавиши/тапа без кнопок;
 - AppShell и целевая карта маршрутов;
 - YAML content loader;
