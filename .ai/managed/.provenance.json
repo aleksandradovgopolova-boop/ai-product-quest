@@ -7,5 +7,5 @@
   "managed_root": ".ai/managed",
   "presets": [],
   "checksums_file": ".checksums.json",
-  "note": "Updated 3.18.0 -> 3.21.0 by ai-ops CLI."
+  "note": "Updated 3.21.0 -> 3.21.0 by ai-ops CLI."
 }
