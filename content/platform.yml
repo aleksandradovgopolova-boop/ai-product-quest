@@ -5,6 +5,17 @@ defaultChapterId: chapter-01
 defaultRoute: /
 # Labels for the system metrics a decision can move. Only metrics listed here can be
 # shown to the player, so a chapter cannot leak an unnamed axis into the readout.
+
+# The six numbers the player sees. They are a projection of the twelve-field system state, not a
+# subset of it: Скорость is the inverse of latency and Риск is computed from four fields plus how
+# much the current configuration lets the product do unattended.
+playerMetricLabels:
+  usefulness: Полезность
+  quality: Качество
+  trust: Доверие
+  speed: Скорость
+  cost: Стоимость
+  risk: Риск
 metricLabels:
   quality: качество
   trust: доверие

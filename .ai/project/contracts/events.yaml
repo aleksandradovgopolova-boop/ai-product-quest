@@ -43,6 +43,94 @@ events:
     sources:
       - src/application/chapter-runner/chapterRunner.ts
       - src/domain/campaign/types.ts
+  # Building the product. Names stay in the dotted family the Event Log already persists: the
+  # event type is stored in every save, so renaming the catalogue would orphan them.
+  - name: product.problem_selected
+    kind: domain
+    payload: [chapterId, sceneId, optionId]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.outcome_selected
+    kind: domain
+    payload: [chapterId, sceneId, optionId]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.model_role_selected
+    kind: domain
+    payload: [chapterId, sceneId, optionId]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.context_item_selected
+    kind: domain
+    payload: [chapterId, sceneId, optionId]
+    reason: Audit trail of what the player added while working inside the context budget.
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.context_item_removed
+    kind: domain
+    payload: [chapterId, sceneId, optionId]
+    reason: Audit trail of what the player took back out of the context budget.
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.context_confirmed
+    kind: domain
+    payload: [chapterId, sceneId, optionIds, limit, spent, overflow]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.tools_confirmed
+    kind: domain
+    payload: [chapterId, sceneId, optionIds]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.boundaries_confirmed
+    kind: domain
+    payload: [chapterId, sceneId, optionIds]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.configuration_created
+    kind: domain
+    payload: [chapterId, version]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.test_started
+    kind: domain
+    payload: [chapterId, sceneId, version]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.test_completed
+    kind: domain
+    payload: [chapterId, sceneId, version]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.component_changed
+    kind: domain
+    payload: [chapterId, sceneId, component, optionIds, maxChanges]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: product.rebuild_confirmed
+    kind: domain
+    payload: [chapterId, sceneId, version]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
+  - name: chapter.completed
+    kind: domain
+    payload: [chapterId]
+    sources:
+      - src/application/chapter-runner/productRunner.ts
+      - src/domain/campaign/types.ts
   - name: legacy.save_migrated
     kind: domain
     payload: [fromKey, chapterId, sceneId, prediction, codexEntryIds, legacyMarked]

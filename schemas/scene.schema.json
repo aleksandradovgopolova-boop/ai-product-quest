@@ -4,6 +4,61 @@
   "type": "object",
   "required": ["scenes"],
   "additionalProperties": false,
+  "$defs": {
+    "productComponent": {
+      "enum": ["problem", "outcome", "modelRole", "context", "tools", "boundaries"]
+    },
+    "budget": {
+      "type": "object",
+      "required": ["limit", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "limit": { "type": "integer", "minimum": 1 },
+        "label": { "type": "string", "minLength": 1 }
+      }
+    },
+    "capabilityStep": {
+      "type": "object",
+      "required": ["target", "select", "prompt"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "$ref": "#/$defs/productComponent" },
+        "select": { "enum": ["one", "many"] },
+        "prompt": { "type": "string", "minLength": 1 },
+        "budget": { "$ref": "#/$defs/budget" },
+        "minSelected": { "type": "integer", "minimum": 0 },
+        "confirmLabel": { "type": "string", "minLength": 1 }
+      }
+    },
+    "capability": {
+      "description": "What the scene lets the player do. The runner switches on `kind`, never on a scene id.",
+      "type": "object",
+      "required": ["kind", "nextSceneId"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["build", "run-tests", "rebuild"] },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/capabilityStep" }
+        },
+        "maxChanges": { "type": "integer", "minimum": 1 },
+        "createsVersion": { "type": "integer", "minimum": 1 },
+        "confirmLabel": { "type": "string", "minLength": 1 },
+        "nextSceneId": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "build" } }, "required": ["kind"] },
+          "then": { "required": ["steps"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "rebuild" } }, "required": ["kind"] },
+          "then": { "required": ["maxChanges"] }
+        }
+      ]
+    }
+  },
   "properties": {
     "scenes": {
       "type": "array",
@@ -85,6 +140,7 @@
               }
             }
           },
+          "capability": { "$ref": "#/$defs/capability" },
           "autoAdvanceMs": { "type": "integer", "minimum": 0 },
           "autoNextSceneId": { "type": "string" }
         }

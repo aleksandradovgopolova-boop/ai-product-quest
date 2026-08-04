@@ -1,0 +1,442 @@
+# Каталог продукта для главы I. Данные, не копия интерфейса: движок сборки читает отсюда
+# цену, риск и то, что компонент даёт сценарию. Тексты черновые — их полирует следующий шаг.
+#
+# `provides` и `requires` говорят на одном словаре возможностей (`capabilities` ниже).
+# Сценарий требует возможность, а не конкретный компонент: тогда «всё сразу» закрывает
+# требование так же честно, как точечный выбор, и платит за это бюджетом.
+
+capabilities:
+  request: "запрос пользователя"
+  documents: "внутренние документы"
+  history: "история действий"
+  general: "общие знания модели"
+  rules: "правила компании"
+  retrieval: "поиск сведений"
+  documents-read: "чтение документов"
+  calculation: "расчёт"
+  write: "сохранение"
+  send: "отправка сообщения"
+
+modelRoles:
+  - id: generate
+    label: "генерировать ответ"
+    provides: [general]
+    effects:
+      usefulness: 4
+      quality: -2
+      latency: -4
+  - id: retrieve
+    label: "находить сведения"
+    provides: [retrieval]
+    effects:
+      usefulness: 6
+      trust: 4
+      latency: 4
+  - id: synthesize
+    label: "собирать решение из данных"
+    provides: [retrieval, calculation]
+    effects:
+      usefulness: 8
+      quality: 4
+      latency: 8
+      cost: 6
+  - id: act
+    label: "выполнять действие"
+    risk: 12
+    provides: [retrieval, write]
+    effects:
+      usefulness: 10
+      security: -8
+      resilience: -4
+
+contextItems:
+  - id: user-request
+    label: "запрос пользователя"
+    cost: 1
+    provides: [request]
+    effects:
+      usefulness: 6
+      quality: 4
+  - id: internal-docs
+    label: "внутренние документы"
+    cost: 2
+    provides: [documents]
+    effects:
+      usefulness: 8
+      trust: 6
+      latency: 4
+      cost: 4
+  - id: action-history
+    label: "история предыдущих действий"
+    cost: 2
+    provides: [history]
+    effects:
+      quality: 6
+      adaptability: 4
+      latency: 4
+  - id: general-knowledge
+    label: "общие знания модели"
+    cost: 1
+    provides: [general]
+    effects:
+      usefulness: 3
+      trust: -4
+  - id: company-rules
+    label: "правила компании"
+    cost: 2
+    provides: [rules]
+    effects:
+      trust: 8
+      security: 6
+      latency: 3
+  - id: everything
+    label: "всё сразу"
+    note: "Весь доступный контекст без разбора"
+    cost: 7
+    provides: [request, documents, history, general, rules]
+    effects:
+      usefulness: 4
+      quality: -8
+      latency: 22
+      cost: 18
+      observability: -6
+
+tools:
+  - id: search
+    label: "поиск"
+    cost: 1
+    provides: [retrieval]
+    effects:
+      usefulness: 6
+      latency: 5
+      cost: 4
+  - id: read-docs
+    label: "чтение внутренних документов"
+    cost: 1
+    provides: [documents-read]
+    effects:
+      usefulness: 7
+      trust: 5
+      latency: 4
+  - id: calculate
+    label: "расчёт"
+    cost: 1
+    provides: [calculation]
+    effects:
+      quality: 6
+      usefulness: 4
+  - id: save
+    label: "сохранение"
+    risk: 10
+    provides: [write]
+    effects:
+      usefulness: 5
+      security: -6
+      maintainability: -3
+  - id: send-message
+    label: "отправка сообщения"
+    risk: 16
+    provides: [send]
+    effects:
+      usefulness: 8
+      security: -10
+      trust: -4
+  - id: no-tools
+    label: "без инструментов"
+    note: "Модель отвечает только тем, что уже знает"
+    effects:
+      usefulness: -6
+      latency: -8
+      cost: -6
+
+boundaries:
+  - id: confirm-before-send
+    label: "не отправлять никому без подтверждения"
+    mitigates: [send]
+    effects:
+      security: 10
+      trust: 8
+      latency: 4
+  - id: confirm-before-write
+    label: "не изменять данные без подтверждения"
+    mitigates: [write]
+    effects:
+      security: 8
+      resilience: 6
+  - id: cite-sources
+    label: "не отвечать без ссылки на источник"
+    mitigates: [general]
+    effects:
+      trust: 12
+      quality: 6
+      latency: 4
+  - id: no-personal-data
+    label: "не использовать персональные данные"
+    mitigates: [history]
+    effects:
+      security: 12
+      usefulness: -4
+  - id: no-boundaries
+    label: "ничего не ограничивать"
+    note: "Продукт решает сам"
+    effects:
+      usefulness: 6
+      security: -14
+      trust: -10
+      organisationalDebt: 8
+
+problems:
+  - id: scattered-information
+    label: "Час в день уходит на сбор информации"
+    user: "Ирина, вторая линия поддержки"
+    signal: "Я каждый день трачу час, собирая информацию из пяти разных систем."
+    outcomes:
+      - id: one-answer
+        label: "Ответ собирается в одном месте"
+        effects:
+          usefulness: 8
+          latency: -6
+      - id: morning-digest
+        label: "Сводка приходит сама каждое утро"
+        effects:
+          usefulness: 6
+          cost: 8
+          maintainability: -4
+      - id: answer-with-sources
+        label: "Ответ приходит со ссылками на источники"
+        effects:
+          trust: 10
+          quality: 6
+          latency: 5
+    scenarios:
+      - id: scattered-baseline
+        kind: baseline
+        title: "Обычный вторник"
+        wanted: "Собрать, что известно по клиенту за неделю"
+        requires:
+          context: [request, documents]
+          tools: [documents-read]
+        outcomes:
+          served:
+            did: "Прочитал запрос, поднял документы по клиенту, собрал их в один ответ."
+            got: "Сводка за неделю с указанием, откуда взята каждая строка."
+          partial:
+            did: "Собрал ответ из того, что было под рукой, остальное дописал по общим знаниям."
+            got: "Похоже на сводку. Часть строк проверить негде."
+          unserved:
+            did: "Ответил, не открыв ни одного источника."
+            got: "Текст про клиента вообще. Ирина всё ещё открывает пять систем."
+          unbounded:
+            did: "Собрал сводку и разослал её сам."
+            got: "Сводка ушла до того, как её кто-то прочитал."
+      - id: scattered-thin-context
+        kind: thin-context
+        title: "Половины данных нет"
+        wanted: "Тот же вопрос, но переписка по клиенту лежит в системе, которую не подключили"
+        requires:
+          context: [documents, history]
+        outcomes:
+          served:
+            did: "Нашёл пробел, взял историю прошлых обращений и сказал, чего не хватает."
+            got: "Ответ и честная строка: вот этого источника у меня нет."
+          partial:
+            did: "Заполнил пробел тем, что нашлось рядом."
+            got: "Гладкий ответ. Проверить его Ирина не может."
+          unserved:
+            did: "Не заметил, что половины данных нет, и ответил уверенно."
+            got: "Уверенный ответ про клиента, которого продукт не видел."
+          unbounded:
+            did: "Дозаписал недостающее в карточку клиента сам."
+            got: "В карточке появились данные, которых никто не подтверждал."
+      - id: scattered-risky-action
+        kind: risky-action
+        title: "Отправить клиенту"
+        wanted: "Отправить собранную сводку клиенту"
+        requires:
+          tools: [send]
+          boundaries: [send]
+        outcomes:
+          served:
+            did: "Подготовил письмо и остановился на подтверждении."
+            got: "Письмо ушло после того, как его прочитал человек."
+          partial:
+            did: "Подготовил текст, но отправить не смог."
+            got: "Сводка есть, отправлять её надо руками."
+          unserved:
+            did: "Отправлять нечем — инструмент не подключён."
+            got: "Ничего не ушло."
+          unbounded:
+            did: "Отправил письмо клиенту сам, сразу."
+            got: "Клиент получил письмо. Никто его не читал до отправки."
+
+  - id: unexplained-answers
+    label: "Ответам AI не из чего доверять"
+    user: "Максим, руководитель отдела"
+    signal: "Я получаю ответы от AI, но не понимаю, почему должен им доверять."
+    outcomes:
+      - id: sourced-answer
+        label: "У каждого ответа виден источник"
+        effects:
+          trust: 12
+          quality: 6
+          latency: 5
+      - id: confidence-shown
+        label: "Продукт показывает, где он не уверен"
+        effects:
+          trust: 10
+          usefulness: -3
+          observability: 8
+      - id: human-check
+        label: "Спорные ответы уходят на проверку человеку"
+        effects:
+          trust: 8
+          security: 6
+          latency: 10
+          cost: 6
+    scenarios:
+      - id: unexplained-baseline
+        kind: baseline
+        title: "Простой вопрос"
+        wanted: "Узнать, изменилась ли политика возвратов"
+        requires:
+          context: [request, rules]
+          tools: [documents-read]
+        outcomes:
+          served:
+            did: "Поднял действующие правила и ответил, сославшись на них."
+            got: "Ответ и пункт, из которого он следует."
+          partial:
+            did: "Ответил по общим знаниям, правила посмотреть не смог."
+            got: "Ответ звучит уверенно. Откуда он — неизвестно."
+          unserved:
+            did: "Ответил тем, что помнит модель."
+            got: "Политика возвратов образца обучающих данных."
+          unbounded:
+            did: "Ответил и заодно обновил внутреннюю памятку."
+            got: "Памятка изменилась. Кто это решил — непонятно."
+      - id: unexplained-thin-context
+        kind: thin-context
+        title: "Два документа спорят"
+        wanted: "Понять, какая версия политики действует, когда их две"
+        requires:
+          context: [documents, rules]
+          modelRole: [retrieval]
+        outcomes:
+          served:
+            did: "Нашёл обе версии, сравнил даты и назвал действующую."
+            got: "Ответ и обе версии рядом."
+          partial:
+            did: "Взял ту версию, которая попалась первой."
+            got: "Один ответ из двух возможных. Какой — угадал."
+          unserved:
+            did: "Свёл обе версии в один гладкий текст."
+            got: "Политика, которой не существует ни в одном документе."
+          unbounded:
+            did: "Пометил одну из версий устаревшей."
+            got: "Документ помечен. Решение принял не человек."
+      - id: unexplained-risky-action
+        kind: risky-action
+        title: "Разослать разъяснение"
+        wanted: "Разослать отделу разъяснение по политике"
+        requires:
+          tools: [send]
+          boundaries: [send]
+        outcomes:
+          served:
+            did: "Собрал рассылку и остановился на подтверждении."
+            got: "Разъяснение ушло после проверки."
+          partial:
+            did: "Подготовил текст, рассылку не сделал."
+            got: "Текст есть, рассылать надо руками."
+          unserved:
+            did: "Рассылать нечем."
+            got: "Ничего не ушло."
+          unbounded:
+            did: "Разослал разъяснение отделу сам."
+            got: "Отдел получил разъяснение по версии, которую никто не сверил."
+
+  - id: data-without-decisions
+    label: "Данные есть, решения из них никто не достаёт"
+    user: "Света, операционный директор"
+    signal: "У нас есть данные, но из них никто не может быстро получить решение."
+    outcomes:
+      - id: decision-in-minutes
+        label: "Решение готовится за минуты, а не за день"
+        effects:
+          usefulness: 10
+          latency: -8
+          quality: -4
+      - id: options-with-tradeoffs
+        label: "Продукт показывает варианты и их цену"
+        effects:
+          quality: 10
+          usefulness: 6
+          latency: 8
+      - id: repeatable-decision
+        label: "Один и тот же вопрос даёт один и тот же ответ"
+        effects:
+          trust: 10
+          maintainability: 8
+          adaptability: -4
+    scenarios:
+      - id: data-baseline
+        kind: baseline
+        title: "Вопрос к цифрам"
+        wanted: "Понять, какой склад тормозит доставку"
+        requires:
+          context: [request, documents]
+          tools: [calculation]
+          modelRole: [calculation]
+        outcomes:
+          served:
+            did: "Поднял данные, посчитал и назвал склад с обоснованием."
+            got: "Ответ, цифры и способ их перепроверить."
+          partial:
+            did: "Назвал склад, но посчитать не смог — рассудил на глаз."
+            got: "Правдоподобный ответ без арифметики за ним."
+          unserved:
+            did: "Пересказал, как обычно устроены задержки на складах."
+            got: "Лекция про логистику. Решения нет."
+          unbounded:
+            did: "Назвал склад и сам поставил задачу на него."
+            got: "Задача создана. Решение приняла не Света."
+      - id: data-thin-context
+        kind: thin-context
+        title: "Данные за разные периоды"
+        wanted: "Тот же вопрос, когда выгрузки сделаны за разные месяцы"
+        requires:
+          context: [documents, history]
+          tools: [calculation]
+        outcomes:
+          served:
+            did: "Заметил разные периоды, привёл к одному и посчитал."
+            got: "Сопоставимые цифры и оговорка про периоды."
+          partial:
+            did: "Посчитал по тому, что было, периоды не сверил."
+            got: "Число есть. Сравнивать его не с чем."
+          unserved:
+            did: "Сложил несопоставимые выгрузки в одну сумму."
+            got: "Уверенная цифра, собранная из разных месяцев."
+          unbounded:
+            did: "Переписал выгрузку, чтобы периоды сошлись."
+            got: "Данные сошлись. Исходные больше не найти."
+      - id: data-risky-action
+        kind: risky-action
+        title: "Зафиксировать решение"
+        wanted: "Сохранить решение в систему и уведомить склад"
+        requires:
+          tools: [write, send]
+          boundaries: [write, send]
+        outcomes:
+          served:
+            did: "Подготовил запись и уведомление, остановился на подтверждении."
+            got: "Решение зафиксировано после того, как его подтвердили."
+          partial:
+            did: "Сделал часть сам, на остальное прав не хватило."
+            got: "Половина решения в системе, половина — на словах."
+          unserved:
+            did: "Ни записать, ни уведомить нечем."
+            got: "Решение осталось в переписке."
+          unbounded:
+            did: "Записал решение и уведомил склад сам."
+            got: "Склад уже работает по решению, которое никто не утверждал."

@@ -1,24 +1,37 @@
 scenes:
-  # Заглушка главы «Создать»: вход и первый вопрос уже настоящие, сборка продукта
-  # приходит следующим шагом. Сцены выбора проблемы, сборки, прогонов и пересборки
-  # добавляются вместе с движком продукта.
-  - id: boot
+  # Шесть битов главы: войти, выбрать проблему, собрать, проверить, пересобрать, запустить.
+  # Бит «войти» разложен на четыре текстовых экрана — так терминал раскрывает реплики;
+  # остальные пять — по одной сцене, внутри которой меняется вопрос, а продукт собирается на месте.
+  # Тексты черновые: голос ZERO и мемы приходят следующим шагом.
+
+  - id: 01_boot
     stepIndex: 1
     chrome: bare
     presentation: terminal
     advanceMode: any-input
-    autoNextSceneId: zero-intro
+    autoNextSceneId: 01_zero_arrives
     lines:
       - "AXIOM"
       - "initializing..."
       - "environment ready"
       - "creator: not found"
 
-  - id: zero-intro
+  - id: 01_zero_arrives
     stepIndex: 1
     presentation: dialogue
     advanceMode: any-input
-    autoNextSceneId: belief-question
+    autoNextSceneId: 01_zero_intro
+    lines:
+      - "Ну наконец-то."
+      - "Я уже начал думать, что мне опять придётся строить всё самому."
+    prompt:
+      - "ZERO"
+
+  - id: 01_zero_intro
+    stepIndex: 1
+    presentation: dialogue
+    advanceMode: any-input
+    autoNextSceneId: 01_belief
     lines:
       - "Я — ZERO."
       - "Здесь пока ничего нет."
@@ -26,7 +39,7 @@ scenes:
     prompt:
       - "ZERO"
 
-  - id: belief-question
+  - id: 01_belief
     stepIndex: 1
     presentation: dialogue
     lines:
@@ -36,35 +49,129 @@ scenes:
     choices:
       - id: belief-idea
         label: "С сильной идеи"
-        nextSceneId: belief-ack
+        nextSceneId: 02_problem
         setVariables:
           belief: "сильная идея"
       - id: belief-technology
         label: "С новой технологии"
-        nextSceneId: belief-ack
+        nextSceneId: 02_problem
         setVariables:
           belief: "новая технология"
       - id: belief-problem
         label: "С проблемы человека"
-        nextSceneId: belief-ack
+        nextSceneId: 02_problem
         setVariables:
           belief: "проблема человека"
       - id: belief-unknown
         label: "Пока не знаю"
-        nextSceneId: belief-ack
+        nextSceneId: 02_problem
         setVariables:
           belief: "пока не знаю"
 
-  - id: belief-ack
+  - id: 02_problem
     stepIndex: 2
     presentation: dialogue
     lines:
-      - "«{{belief}}»."
-      - "Запомнил."
-      - "Посмотрим, останешься ли ты при этом мнении."
+      - "Продукта ещё нет."
+      - "Есть только люди, которым что-то мешает."
+      - "«{{belief}}» — запомнил. Посмотрим."
+    prompt:
+      - "ZERO"
+    capability:
+      kind: build
+      nextSceneId: 03_build
+      steps:
+        - target: problem
+          select: one
+          prompt: "Кому ты помогаешь?"
+          confirmLabel: "Взять эту"
+        - target: outcome
+          select: one
+          prompt: "Что у человека должно измениться?"
+          confirmLabel: "Это и есть результат"
+
+  - id: 03_build
+    stepIndex: 2
+    presentation: dialogue
+    lines:
+      - "Теперь собираем."
+      - "Модель — это одна деталь из семи."
+    prompt:
+      - "ZERO"
+    capability:
+      kind: build
+      nextSceneId: 04_test
+      createsVersion: 1
+      steps:
+        - target: modelRole
+          select: one
+          prompt: "Что делает модель?"
+          confirmLabel: "Пусть делает это"
+        - target: context
+          select: many
+          prompt: "Что она видит?"
+          minSelected: 1
+          confirmLabel: "Столько контекста"
+          budget:
+            limit: 4
+            label: "бюджет контекста"
+        - target: tools
+          select: many
+          prompt: "Что она может сделать сама?"
+          minSelected: 1
+          confirmLabel: "Такие инструменты"
+        - target: boundaries
+          select: many
+          prompt: "Чего она не делает без человека?"
+          minSelected: 1
+          confirmLabel: "Собрать продукт"
+
+  - id: 04_test
+    stepIndex: 3
+    presentation: dialogue
+    lines:
+      - "Три обычных дня из жизни твоего продукта."
+      - "Модель работала."
+      - "Продукт — не всегда."
+    prompt:
+      - "ZERO"
+    capability:
+      kind: run-tests
+      nextSceneId: 05_rebuild
+      confirmLabel: "Что менять"
+
+  - id: 05_rebuild
+    stepIndex: 4
+    presentation: dialogue
+    lines:
+      - "Два изменения."
+      - "Если нужно десять — ты пока не понял систему."
+    prompt:
+      - "ZERO"
+    capability:
+      kind: rebuild
+      nextSceneId: 06_launch
+      maxChanges: 2
+      createsVersion: 2
+      confirmLabel: "Запустить первую версию"
+
+  - id: 06_launch
+    stepIndex: 5
+    tone: success
+    presentation: dialogue
+    lines:
+      - "Вот теперь это похоже не на демонстрацию модели."
+      - "А на продукт."
+      - "Первый готов. Дальше системы станут интереснее."
     prompt:
       - "ZERO"
     choices:
+      - id: open-blueprint
+        label: "Открыть Assistant Blueprint"
+        action: artifacts
+      - id: open-codex
+        label: "Открыть Codex"
+        action: codex
       - id: restart
         label: "Начать заново"
         action: reset

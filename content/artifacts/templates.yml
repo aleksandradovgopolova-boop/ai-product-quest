@@ -1,4 +1,6 @@
 artifacts:
+  # Blueprint — проекция Event Log, а не заранее написанный текст. Порядок разделов повторяет
+  # порядок сборки: сначала человек и его проблема, потом продукт, потом что с ним стало.
   - id: assistant-blueprint
     chapterId: chapter-01
     title: "Assistant Blueprint"
@@ -10,21 +12,29 @@ artifacts:
         title: "Проблема"
       - id: outcome
         title: "Ожидаемый результат"
-      - id: model
+      - id: model-role
         title: "Роль модели"
       - id: context
         title: "Контекст"
+      - id: context-budget
+        title: "Бюджет контекста"
       - id: tools
         title: "Инструменты"
       - id: boundaries
-        title: "Ограничения"
-      - id: verification
-        title: "Проверка"
-      - id: first-version
-        title: "Первая версия"
-      - id: weaknesses
-        title: "Слабые места"
-      - id: revisions
+        title: "Границы"
+      - id: first-configuration
+        title: "Первая конфигурация"
+      - id: first-results
+        title: "Что показал первый прогон"
+      - id: changes
         title: "Два изменения"
+      - id: final-configuration
+        title: "Финальная конфигурация"
+      - id: final-results
+        title: "Что показал финальный прогон"
       - id: tradeoffs
         title: "Компромиссы"
+      - id: belief
+        title: "С чего ты начинал"
+      - id: axiom
+        title: "Аксиома"

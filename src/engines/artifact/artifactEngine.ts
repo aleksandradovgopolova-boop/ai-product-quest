@@ -1,3 +1,5 @@
+import { renderBlueprintSection } from "@/src/engines/artifact/assistantBlueprint";
+import { getChapter } from "@/src/domain/campaign/lookup";
 import type { ArtifactRecord, ArtifactTemplate, CampaignState, PlatformContent } from "@/src/domain/campaign/types";
 
 export function generateArtifactRecord(params: {
@@ -17,49 +19,23 @@ export function generateArtifactRecord(params: {
     templateId: template.id,
     chapterId: template.chapterId,
     title: template.title,
-    body: renderArtifactBody(template, params.state),
+    body: renderArtifactBody(template, params.content, params.state),
     createdAt: params.occurredAt,
   };
 }
 
 /**
- * The Blueprint is a projection of what the player decided, not prose written in advance.
- * Each section reads the variable its decision recorded; a section with nothing behind it
- * says so instead of inventing content.
+ * The Blueprint is a projection of what the player built, not prose written in advance. Each
+ * section reads the product as it stands; a section with nothing behind it says so instead of
+ * inventing content.
  */
-const sectionVariables: Record<string, string> = {
-  user: "user",
-  problem: "problem",
-  outcome: "outcome",
-  model: "modelRole",
-  context: "context",
-  tools: "tools",
-  boundaries: "boundaries",
-  verification: "verification",
-  "first-version": "firstVersion",
-  weaknesses: "weaknesses",
-  revisions: "revisions",
-  tradeoffs: "tradeoffs",
-};
-
-const pendingText = "Решение ещё не принято.";
-
-function renderArtifactBody(template: ArtifactTemplate, state: CampaignState) {
-  const lastDecision = Object.values(state.decisions).at(-1);
+function renderArtifactBody(template: ArtifactTemplate, content: PlatformContent, state: CampaignState) {
+  const chapter = getChapter(content, template.chapterId);
 
   return template.sections
     .map((section) => {
-      const recorded = state.variables[sectionVariables[section.id] ?? section.id];
-
-      if (recorded) {
-        return `## ${section.title}\n${recorded}`;
-      }
-
-      if (section.id === "first-version" && lastDecision) {
-        return `## ${section.title}\n${lastDecision.label}`;
-      }
-
-      return `## ${section.title}\n${pendingText}`;
+      const body = renderBlueprintSection({ sectionId: section.id, content, chapter, state });
+      return `## ${section.title}\n${body}`;
     })
     .join("\n\n");
 }

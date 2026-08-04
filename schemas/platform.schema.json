@@ -14,6 +14,20 @@
       "type": "object",
       "minProperties": 1,
       "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "playerMetricLabels": {
+      "description": "Labels for the six numbers shown to the player. The engine owns the formulas, content owns the words.",
+      "type": "object",
+      "required": ["usefulness", "quality", "trust", "speed", "cost", "risk"],
+      "additionalProperties": false,
+      "properties": {
+        "usefulness": { "type": "string", "minLength": 1 },
+        "quality": { "type": "string", "minLength": 1 },
+        "trust": { "type": "string", "minLength": 1 },
+        "speed": { "type": "string", "minLength": 1 },
+        "cost": { "type": "string", "minLength": 1 },
+        "risk": { "type": "string", "minLength": 1 }
+      }
     }
   }
 }

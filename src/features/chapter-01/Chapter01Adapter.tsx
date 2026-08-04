@@ -138,7 +138,7 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
       }
 
       playInterfaceTone("confirm");
-      showSystemMessage(getSystemMessage(choice, campaign.currentSceneId));
+      showSystemMessage(getSystemMessage(choice));
       setIsProcessing(true);
 
       if (processingTimerRef.current) {

@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProductCatalogue",
+  "type": "object",
+  "required": ["capabilities", "modelRoles", "contextItems", "tools", "boundaries", "problems"],
+  "additionalProperties": false,
+  "$defs": {
+    "capabilityToken": { "type": "string", "minLength": 1 },
+    "effects": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "number" }
+    },
+    "option": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "note": { "type": "string", "minLength": 1 },
+        "cost": { "type": "integer", "minimum": 0 },
+        "risk": { "type": "integer", "minimum": 0 },
+        "provides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityToken" }
+        },
+        "mitigates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capabilityToken" }
+        },
+        "effects": { "$ref": "#/$defs/effects" }
+      }
+    },
+    "narration": {
+      "type": "object",
+      "required": ["did", "got"],
+      "additionalProperties": false,
+      "properties": {
+        "did": { "type": "string", "minLength": 1 },
+        "got": { "type": "string", "minLength": 1 }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["id", "kind", "title", "wanted", "outcomes"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["baseline", "thin-context", "risky-action"] },
+        "title": { "type": "string", "minLength": 1 },
+        "wanted": { "type": "string", "minLength": 1 },
+        "requires": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "problem": { "type": "array", "items": { "$ref": "#/$defs/capabilityToken" } },
+            "outcome": { "type": "array", "items": { "$ref": "#/$defs/capabilityToken" } },
+            "modelRole": { "type": "array", "items": { "$ref": "#/$defs/capabilityToken" } },
+            "context": { "type": "array", "items": { "$ref": "#/$defs/capabilityToken" } },
+            "tools": { "type": "array", "items": { "$ref": "#/$defs/capabilityToken" } },
+            "boundaries": { "type": "array", "items": { "$ref": "#/$defs/capabilityToken" } }
+          }
+        },
+        "outcomes": {
+          "type": "object",
+          "required": ["served", "partial", "unserved", "unbounded"],
+          "additionalProperties": false,
+          "properties": {
+            "served": { "$ref": "#/$defs/narration" },
+            "partial": { "$ref": "#/$defs/narration" },
+            "unserved": { "$ref": "#/$defs/narration" },
+            "unbounded": { "$ref": "#/$defs/narration" }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "capabilities": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "modelRoles": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/option" }
+    },
+    "contextItems": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/option" }
+    },
+    "tools": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/option" }
+    },
+    "boundaries": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/option" }
+    },
+    "problems": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "user", "signal", "outcomes", "scenarios"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "user": { "type": "string", "minLength": 1 },
+          "signal": { "type": "string", "minLength": 1 },
+          "outcomes": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "$ref": "#/$defs/option" }
+          },
+          "scenarios": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": { "$ref": "#/$defs/scenario" }
+          }
+        }
+      }
+    }
+  }
+}

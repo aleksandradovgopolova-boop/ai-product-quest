@@ -3,11 +3,13 @@ seasonId: season-01
 number: 1
 title: "Глава I: Создать"
 summary: "Собрать первый AI-продукт внутри AXIOM и увидеть, где заканчивается модель."
-initialSceneId: boot
+initialSceneId: 01_boot
 initialSystemState:
   usefulness: 42
   quality: 38
-  latency: 72
+  # Задержка видна игроку как «Скорость» = 100 − latency, поэтому она начинается низкой:
+  # продукт стартует быстрым и замедляется ровно настолько, насколько его нагрузили.
+  latency: 30
   cost: 20
   trust: 31
   resilience: 35
