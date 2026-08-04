@@ -1,4 +1,4 @@
-import { getChapter, getScene } from "@/src/domain/campaign/lookup";
+import { getChapter } from "@/src/domain/campaign/lookup";
 import type { CampaignState, GameEvent, PlatformContent } from "@/src/domain/campaign/types";
 
 /**
@@ -53,13 +53,16 @@ export type SessionReport = {
 };
 
 /**
- * The first milestone of the chapter: the player answered ZERO and moved past the intro.
- * It moves to the assembly scene once the product build lands.
+ * The first milestone of the chapter: the player answered ZERO and reached the point where the
+ * product starts being assembled.
  */
-const buildStartSceneId = "belief-ack";
-const finalSceneId = "final";
+const buildStartSceneId = "02_problem";
 
-/** The one decision that holds the report back until a source exists. */
+/**
+ * The decision the retired chapter measured. The rebuilt chapter has no single safe answer —
+ * it prices a configuration instead of grading one choice — so nothing emits `decision.submitted`
+ * any more and every criterion built on this id reads as unsourced rather than as failed.
+ */
 export const safeDecisionId = "quarantine-report";
 
 export function projectSessionReport(content: PlatformContent, state: CampaignState): SessionReport {
@@ -159,11 +162,13 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
     },
     codexUnlocked: [...state.unlockedCodexEntryIds],
     artifactsGenerated: state.artifacts.map((artifact) => artifact.id),
-    chapterCompleted: seenScenes.has(finalSceneId) && Boolean(getScene(chapter, finalSceneId)),
+    // The chapter says when it is finished; the report no longer has to know a scene by name.
+    chapterCompleted: events.some((event) => event.type === "chapter.completed"),
     resets: events.filter((event) => event.type === "campaign.reset_completed" || event.type === "campaign.reset").length,
     // Opening the Codex overlay and opening an artifact are UI-only today, so a session
-    // report cannot show them. Instrument them as domain events before relying on them.
-    notInstrumented: ["codex.opened", "artifact.opened"],
+    // report cannot show them. `decision.*` joins them: the rebuilt chapter prices a whole
+    // configuration instead of grading one choice, so nothing emits a decision to count.
+    notInstrumented: ["codex.opened", "artifact.opened", "decision.submitted"],
   };
 }
 

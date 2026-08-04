@@ -10,10 +10,10 @@ test("YAML content loads as the canonical Platform → Season → Chapter → Sc
   assert.equal(content.platformId, "ai-product-quest");
   assert.deepEqual(content.chapters.map((item) => item.id), ["chapter-01"]);
   assert.equal(content.seasons[0]?.chapterIds.length, 1);
-  assert.equal(chapter.initialSceneId, "boot");
-  assert.equal(chapter.sceneById.boot.advanceMode, "any-input");
-  assert.equal(chapter.sceneById.boot.autoNextSceneId, "zero-intro");
-  assert.equal(chapter.sceneById["belief-question"].choices?.length, 4);
+  assert.equal(chapter.initialSceneId, "01_boot");
+  assert.equal(chapter.sceneById["01_boot"].advanceMode, "any-input");
+  assert.equal(chapter.sceneById["01_boot"].autoNextSceneId, "01_zero_arrives");
+  assert.equal(chapter.sceneById["01_belief"].choices?.length, 4);
   assert.deepEqual(chapter.stages, ["Войти", "Создать", "Проверить", "Пересобрать", "Запустить"]);
   assert.deepEqual(chapter.codexEntryIds, ["llm-not-product"]);
   assert.deepEqual(chapter.artifactIds, ["assistant-blueprint"]);
@@ -39,7 +39,7 @@ test("the chapter is about building a product, not auditing a report", () => {
   }
 
   // The first question the player answers has no better answer to point at.
-  const question = chapter.sceneById["belief-question"];
+  const question = chapter.sceneById["01_belief"];
   assert.deepEqual(
     (question.choices ?? []).filter((choice) => choice.tone === "primary"),
     [],
@@ -67,8 +67,8 @@ test("every recorded answer keeps a variable and every placeholder resolves", ()
     }
   }
 
-  for (const choice of chapter.sceneById["belief-question"].choices ?? []) {
-    assert.ok(choice.setVariables, `belief-question/${choice.id} must record an answer`);
+  for (const choice of chapter.sceneById["01_belief"].choices ?? []) {
+    assert.ok(choice.setVariables, `01_belief/${choice.id} must record an answer`);
   }
 });
 

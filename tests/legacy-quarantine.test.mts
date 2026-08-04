@@ -18,7 +18,7 @@ test("the replaced chapter is kept as history and never loaded", async () => {
     assert.equal(sceneIds.includes(retired), false, `${retired} is still reachable`);
   }
 
-  assert.equal(content.chapterById["chapter-01"].scenes.length, 4);
+  assert.equal(content.chapterById["chapter-01"].scenes.length, 9);
 });
 
 test("no source file imports or references the archive", async () => {

@@ -11,7 +11,7 @@ test("session report reads a run out of the Event Log", () => {
   const content = loadGameContent();
   let state = createInitialCampaignState(content, "chapter-01", start);
 
-  for (const sceneId of ["zero-intro", "belief-question"]) {
+  for (const sceneId of ["01_zero_arrives", "01_zero_intro", "01_belief"]) {
     state = advanceToScene({ content, state, sceneId, occurredAt: start });
   }
 
@@ -30,7 +30,7 @@ test("session report reads a run out of the Event Log", () => {
 test("session report marks a run abandoned before the build starts", () => {
   const content = loadGameContent();
   let state = createInitialCampaignState(content, "chapter-01", start);
-  state = advanceToScene({ content, state, sceneId: "zero-intro", occurredAt: start });
+  state = advanceToScene({ content, state, sceneId: "01_zero_intro", occurredAt: start });
 
   const report = projectSessionReport(content, state);
 

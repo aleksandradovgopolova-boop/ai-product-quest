@@ -71,14 +71,15 @@ export function selectZeroState({ scene, isProcessing }: { scene: Scene; isProce
     return "decision";
   }
 
-  if (scene.tone === "success") {
-    return "right";
-  }
-
-  // A scene whose every choice leaves the chapter is the end, not a question.
+  // A scene whose every choice leaves the chapter is the end, not a question — and an ending
+  // outranks its own tone: the closing scene is warm, but ZERO holds still for it.
   const choices = scene.choices ?? [];
   if (choices.length > 0 && choices.every((choice) => choice.action)) {
     return "closed";
+  }
+
+  if (scene.tone === "success") {
+    return "right";
   }
 
   if (choices.length > 0) {

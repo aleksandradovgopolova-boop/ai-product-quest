@@ -19,9 +19,21 @@ export const emptyConfiguration: ProductConfiguration = {
   contextOverflow: 0,
 };
 
-/** The components a player may swap during the rebuild, in the order the chapter presents them. */
-export const rebuildableComponents: ProductComponentKind[] = [
+export const allProductComponents: ProductComponentKind[] = [
   "problem",
+  "outcome",
+  "modelRole",
+  "context",
+  "tools",
+  "boundaries",
+];
+
+/**
+ * What a player may swap during the rebuild. The problem itself is not on the list: changing it
+ * would replace the outcomes and the scenarios underneath, so the before/after would compare two
+ * different products rather than two versions of one.
+ */
+export const rebuildableComponents: ProductComponentKind[] = [
   "outcome",
   "modelRole",
   "context",

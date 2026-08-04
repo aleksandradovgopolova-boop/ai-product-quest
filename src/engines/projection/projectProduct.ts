@@ -1,9 +1,9 @@
 import {
+  allProductComponents,
   countBudget,
   emptyConfiguration,
   getOption,
   getSelection,
-  rebuildableComponents,
   withSelection,
 } from "@/src/engines/product/productBuilder";
 import { runProductTests } from "@/src/engines/product/productTesting";
@@ -164,7 +164,7 @@ export function describeSelection(
 }
 
 function readComponent(value: unknown): ProductComponentKind | undefined {
-  return typeof value === "string" && (rebuildableComponents as string[]).includes(value)
+  return typeof value === "string" && (allProductComponents as string[]).includes(value)
     ? (value as ProductComponentKind)
     : undefined;
 }
