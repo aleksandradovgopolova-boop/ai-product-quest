@@ -5,14 +5,14 @@
 schema_version: 1
 registry_type: release-claims
 
-version: 3.9.2
-phase: "v3.9 — First-class Claude Code Adapter + complexity-aware routing"
+version: 3.18.0
+phase: "v3.18 — Development Culture & Resource Guardrails (срез 3): cost-aware work method. Фича завершена."
 channel: stable
-patch_note: "3.9.2 — Docs Truth Alignment: убран стейл 'sequential-only' в docs/parallel-sessions.md + NOTICE.md (кит умеет concurrent parallel-2 с 3.8); drift-детектор расширен на docs/ (stale_marker_files)"
+patch_note: "3.18.0 — Development Culture Guardrails (срез 3, WP6): cost_method — единый советник экономичного способа работы в ФИКСИРОВАННОМ порядке приоритетов (1 гигиена сессии > 2 делегирование > 3 итерации/тесты > 4 runtime > 5 effort), собирает session_guardrails + delegation_advisor + model_router; советы affected-tests/не-читать-весь-репо/переиспользование; команда `ai-ops method`. Вся фича Development Culture Guardrails (3.16→3.18) закрыта."
 
 # Числа сверяются ДЕРИВИРОВАННО (не на слово): checks_count = python3-команды в AGENTS.md;
 # agents_count = записи в registry/agents.yaml. Устаревшие числа (напр. «91+») CI отклонит.
-checks_count: 181
+checks_count: 192
 agents_count: 51
 
 qualified_on: >
