@@ -1168,3 +1168,43 @@
 .product-attribution-missing {
   color: var(--foreground);
 }
+
+/* The chapter has to hold inside one viewport, and the run readout is the tallest thing in it.
+   The scene is capped to the band between the topbar and the status HUD; its copy scrolls
+   inside that band while the action row stays pinned, so the way forward is never below the
+   fold. Proper viewport typography lands with the presentation pass. */
+.flow-scene {
+  grid-template-rows: minmax(0, 1fr) auto;
+  /* Centred on the viewport, so its height is bounded by twice the distance to the nearest HUD
+     band — the status readout above the hotkeys. Anything taller slides under them. */
+  max-height: min(58dvh, calc(100dvh - 324px));
+}
+
+.flow-scene-bare {
+  max-height: none;
+}
+
+.flow-present {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* A scene carrying a mechanic trades headline type for room to read the options. */
+.flow-scene:has(.product-step, .product-rebuild, .product-results) .flow-line {
+  font-size: clamp(1.05rem, min(2.6vw, 3.4vh), 1.7rem);
+  font-weight: 460;
+}
+
+.flow-scene:has(.product-step, .product-rebuild, .product-results) {
+  gap: clamp(14px, 2.4vh, 28px);
+}
+
+@media (max-width: 820px) {
+  .flow-scene {
+    /* On narrow screens the status readout moves under the topbar and ends around 180px, while
+       the scene centres at 45%. The scene may only be twice that gap tall. */
+    max-height: calc((45dvh - 186px) * 2);
+  }
+}
