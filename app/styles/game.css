@@ -870,7 +870,7 @@
   aspect-ratio: 192 / 208;
   background-image: var(--zero-sheet);
   background-repeat: no-repeat;
-  background-size: calc(var(--zero-frames) * 100%) calc(var(--zero-rows) * 100%);
+  background-size: calc(var(--zero-columns) * 100%) calc(var(--zero-rows) * 100%);
   background-position-x: 0%;
   background-position-y: calc(var(--zero-row) * 100% / (var(--zero-rows) - 1));
   bottom: clamp(14px, 2vw, 22px);
@@ -882,17 +882,18 @@
   animation: zero-frames var(--zero-duration) steps(var(--zero-frames)) infinite;
 }
 
+/* One step per used frame; a row's unused tail columns are never reached. */
 @keyframes zero-frames {
   from {
     background-position-x: 0%;
   }
 
   to {
-    background-position-x: calc(var(--zero-frames) * 100% / (var(--zero-frames) - 1));
+    background-position-x: calc(var(--zero-frames) * 100% / (var(--zero-columns) - 1));
   }
 }
 
-/* A closed case does not fidget. */
+/* A finished chapter does not fidget: that row holds a single pose. */
 .zero-sprite[data-state="closed"] {
   animation: none;
   opacity: 0.7;
