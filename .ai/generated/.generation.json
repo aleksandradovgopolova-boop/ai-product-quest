@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "package_version": "3.18.0",
+  "package_version": "3.21.0",
   "sources": {
-    "registry/workflows.yaml": "82da26cf13a8c16402d2a4559fa8da9f6b92da6f60e59c7734ad9ff56155d3cb",
+    "registry/workflows.yaml": "efbbc210112da4878647021b329b2842d6690bc6bb3923a58123a358cdb17bcb",
     "registry/agents.yaml": "d1ae7f5c0a44f83e432692125fb06adf8e3c867ec2abc50a2ab7d15f129677b4"
   },
   "generated": [
