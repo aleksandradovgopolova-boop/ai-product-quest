@@ -27,7 +27,7 @@ const passingInterview: InterviewScore = {
 function makeRun(participant: string, shape: RunShape = {}): CohortRun {
   const report = {
     elapsedMs: (shape.elapsedMinutes ?? 9) * 60_000,
-    opening: { abandonedBeforeInvestigation: shape.abandoned ?? false },
+    opening: { abandonedBeforeBuild: shape.abandoned ?? false },
     decision: {
       first: shape.firstDecisionId === undefined ? { decisionId: "quarantine-report" } : { decisionId: shape.firstDecisionId },
       correctedAfterFeedback: shape.correctedAfterFeedback ?? false,

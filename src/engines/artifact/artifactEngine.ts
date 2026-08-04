@@ -22,27 +22,44 @@ export function generateArtifactRecord(params: {
   };
 }
 
+/**
+ * The Blueprint is a projection of what the player decided, not prose written in advance.
+ * Each section reads the variable its decision recorded; a section with nothing behind it
+ * says so instead of inventing content.
+ */
+const sectionVariables: Record<string, string> = {
+  user: "user",
+  problem: "problem",
+  outcome: "outcome",
+  model: "modelRole",
+  context: "context",
+  tools: "tools",
+  boundaries: "boundaries",
+  verification: "verification",
+  "first-version": "firstVersion",
+  weaknesses: "weaknesses",
+  revisions: "revisions",
+  tradeoffs: "tradeoffs",
+};
+
+const pendingText = "Решение ещё не принято.";
+
 function renderArtifactBody(template: ArtifactTemplate, state: CampaignState) {
-  const decision = Object.values(state.decisions).at(-1);
-  const decisionText = decision ? decision.label : "Решение ещё не принято.";
-  const sourceStatus = state.systemState.observability >= 40 ? "Трассировка источников требуется как часть продукта." : "След источников отсутствует.";
+  const lastDecision = Object.values(state.decisions).at(-1);
 
   return template.sections
     .map((section) => {
-      switch (section.id) {
-        case "problem":
-          return `## ${section.title}\nКорпоративный отчёт содержит факты без подтверждённых внутренних источников.`;
-        case "model":
-          return `## ${section.title}\nЯзыковая модель продолжает входной текст и не проверяет реальность сама по себе.`;
-        case "context":
-          return `## ${section.title}\n${sourceStatus}`;
-        case "decision":
-          return `## ${section.title}\n${decisionText}`;
-        case "risks":
-          return `## ${section.title}\nНельзя выпускать уверенный ответ без видимого следа источников, проверки и ответственности продукта.`;
-        default:
-          return `## ${section.title}\nЗафиксировано системой.`;
+      const recorded = state.variables[sectionVariables[section.id] ?? section.id];
+
+      if (recorded) {
+        return `## ${section.title}\n${recorded}`;
       }
+
+      if (section.id === "first-version" && lastDecision) {
+        return `## ${section.title}\n${lastDecision.label}`;
+      }
+
+      return `## ${section.title}\n${pendingText}`;
     })
     .join("\n\n");
 }

@@ -1,4 +1,4 @@
-# Zero Sprite Brief
+# ZERO Sprite Brief
 
 The game ships with a placeholder sheet at `src/features/chapter-01/view/assets/zero-sprite.png`.
 Real art replaces that file and nothing else: the geometry, the row order, and the state logic are
@@ -33,18 +33,18 @@ scanline and crossed eyes, not by hue.
 
 ## Scale
 
-Zero is drawn at character scale, not HUD-icon scale: 208 px on a wide desktop, 150 px on a short
+ZERO is drawn at character scale, not HUD-icon scale: 208 px on a wide desktop, 150 px on a short
 one, 88–116 px on a phone. At that size the art carries detail — shading, silhouette, a readable
 face — the way the Petdex pets do. The placeholder currently in the repository is deliberately crude
 and will look poor at this size; that is what the real sheet fixes.
 
 ## Character
 
-Zero is the system talking about itself, not a pet. It lives inside АКСИОМА and cannot see itself
+ZERO is the system talking about itself, not a pet. It lives inside AXIOM and cannot see itself
 from the inside — that is the whole reason the player was called in. Read: a small terminal creature,
 a cursor with a face, an instrument. Not a mascot, not fur, not an animal with a drink.
 
-The tone of the chapter is a night shift and a report that cannot be traced. Zero is calm, dry, and
+The tone of the chapter is a night shift and a report that cannot be traced. ZERO is calm, dry, and
 slightly worn — it has been running for years and knows it is contradictory.
 
 ## The nine states and what each one must say
@@ -52,10 +52,10 @@ slightly worn — it has been running for years and knows it is contradictory.
 | Row | State | When it plays | What it must read as |
 | --- | --- | --- | --- |
 | 1 | `idle` | a line is on screen, nothing is asked | alive, breathing, waiting without pressure |
-| 2 | `speaking` | while Zero's lines are revealing | the machine is producing speech |
+| 2 | `speaking` | while ZERO's lines are revealing | the machine is producing speech |
 | 3 | `waiting` | the player has answers on screen | attention turned to the player, a caret asking |
 | 4 | `thinking` | `ПРОВЕРКА...` after a choice | working, checking, not yet answering |
-| 5 | `right` | a verdict scene with `tone: success` | recognition, not celebration — Zero does not applaud |
+| 5 | `right` | a verdict scene with `tone: success` | recognition, not celebration — ZERO does not applaud |
 | 6 | `wrong` | a verdict scene with `tone: error` | a fault inside the system: torn scanline, signal loss |
 | 7 | `decision` | the decision readout with priced metrics | weight, consequence, something being committed |
 | 8 | `codex` | the entry being written to memory | writing to storage, a block filling |

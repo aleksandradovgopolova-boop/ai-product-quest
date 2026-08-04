@@ -13,19 +13,19 @@ export function SystemFrame() {
 }
 
 /**
- * `children` is the case progress rail. It sits beside the active case rather than at the
- * foot of the screen: both answer "where in the case am I", and split across the viewport
- * they read as two unrelated HUD elements.
+ * `children` is the stage rail. It sits beside what is being built rather than at the foot of
+ * the screen: both answer "where in the chapter am I", and split across the viewport they read
+ * as two unrelated HUD elements.
  */
 export function SystemTopbar({
-  caseShort,
-  caseSummary,
-  caseTitle,
+  chapterShort,
+  chapterSummary,
+  chapterTitle,
   children,
 }: {
-  caseShort: string;
-  caseSummary: string;
-  caseTitle: string;
+  chapterShort: string;
+  chapterSummary: string;
+  chapterTitle: string;
   children?: ReactNode;
 }) {
   return (
@@ -33,14 +33,14 @@ export function SystemTopbar({
       <div className="system-topbar-row">
         <span className="system-brand">AI PRODUCT QUEST</span>
         <span className="system-case-id">
-          <span className="system-case-long">{caseTitle.toUpperCase()}</span>
-          <span className="system-case-short">{caseShort}</span>
+          <span className="system-case-long">{chapterTitle.toUpperCase()}</span>
+          <span className="system-case-short">{chapterShort}</span>
         </span>
       </div>
       <div className="system-topbar-lower">
         <div className="system-case-brief">
-          <span>АКТИВНОЕ ДЕЛО</span>
-          <strong>{caseSummary}</strong>
+          <span>ЧТО СОЗДАЁМ</span>
+          <strong>{chapterSummary}</strong>
         </div>
         {children}
       </div>

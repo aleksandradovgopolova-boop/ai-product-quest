@@ -30,4 +30,4 @@ sources:
 - Chapter-specific logic can creep back into generic UI.
 - Content changes can bypass YAML schema validation if future agents edit runtime code instead.
 - Visual polish can accidentally turn the game back into a website, dashboard, or LMS.
-- Future agents can miss that Zero is now implemented in YAML, not only described in docs.
+- Future agents can miss that ZERO is now implemented in YAML, not only described in docs.

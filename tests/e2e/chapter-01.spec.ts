@@ -7,67 +7,43 @@ const appStorageKeys = [
   "ai-product-quest-progress",
 ];
 
-test("Chapter 01 happy path persists Codex and artifacts across platform routes", async ({ page }) => {
+test("Chapter 01 opens on AXIOM and records the first answer", async ({ page }) => {
   await resetGame(page);
   await completeChapterOne(page);
 
-  await expect(page.getByText("Дело закрыто.", { exact: true })).toBeVisible();
+  await expect(page.getByText("«проблема человека».", { exact: true })).toBeVisible();
   await assertViewportIntegrity(page);
 
-  await page.keyboard.press("c");
-  await expect(page.getByRole("dialog", { name: "Codex" })).toBeVisible();
-  await expect(page.getByText("ОТКРЫВАЮ ПАМЯТЬ...")).toBeVisible();
-  await expect(page.getByText("Языковая модель", { exact: true })).toBeVisible();
-
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "Codex" })).toBeHidden();
-
-  await choose(page, "Открыть артефакт");
-  await expect(page).toHaveURL(/\/artifacts$/);
-  await expect(page.getByRole("heading", { name: "След решений" })).toBeVisible();
-  await expect(page.locator('[aria-label="Артефакты"]')).toContainText("Assistant Blueprint");
-  await expect(page.locator('[aria-label="Артефакты"]')).toContainText("Трассировка источников требуется как часть продукта.");
-  await expect(page.locator('[aria-label="Артефакты"]')).toContainText("Остановить отчёт и пометить как непроверенный");
+  // The stage rail replaced the case rail; the chapter is about building, not closing a case.
+  await expect(page.locator(".system-progress")).toContainText("Создать");
+  await expect(page.locator(".system-topbar")).not.toContainText("ДЕЛО");
 
   await page.goto("/codex");
   await expect(page.getByRole("heading", { name: "Системная память" })).toBeVisible();
-  await expect(page.locator('[aria-label="Записи Codex"]')).toContainText("Языковая модель");
-  await expect(page.locator('[aria-label="Записи Codex"]')).toContainText("Предсказывает продолжение.");
+  await expect(page.locator('[aria-label="Записи Codex"]')).toContainText("закрыто");
 });
 
 test("Chapter 01 supports keyboard selection, confirmation, and back navigation", async ({ page }) => {
   await resetGame(page);
 
-  await page.keyboard.press("Enter");
-  await expectScene(page, "Система собрала его ночью, сама.");
-  await page.waitForTimeout(320);
-
-  await page.keyboard.press("Enter");
-  await expectScene(page, "Я Zero. Я живу внутри АКСИОМЫ.");
-  await page.waitForTimeout(320);
-
-  await page.keyboard.press("Enter");
-  await expectScene(page, "С чего начнёшь?");
+  await advanceAnyInput(page, "С чего начинается хороший продукт?");
 
   // No answer may be pre-highlighted: a scene must not point at one before the player aims.
-  for (const label of ["Прочитать отчёт", "Посмотреть вход системы", "Найти, кто подписал", "Пока не знаю"]) {
+  for (const label of ["С сильной идеи", "С новой технологии", "С проблемы человека", "Пока не знаю"]) {
     await expect(choice(page, label)).not.toHaveAttribute("aria-current", "true");
   }
 
   await page.keyboard.press("ArrowDown");
-  await expect(choice(page, "Прочитать отчёт")).toHaveAttribute("aria-current", "true");
+  await expect(choice(page, "С сильной идеи")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("ArrowDown");
-  await expect(choice(page, "Посмотреть вход системы")).toHaveAttribute("aria-current", "true");
-
-  await page.keyboard.press("ArrowDown");
-  await expect(choice(page, "Найти, кто подписал")).toHaveAttribute("aria-current", "true");
+  await expect(choice(page, "С новой технологии")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "Аналитик ночной смены. Он отчёт не писал — он его принял.");
+  await expectScene(page, "«новая технология».");
 
   await page.keyboard.press("Escape");
-  await expectScene(page, "С чего начнёшь?");
+  await expectScene(page, "С чего начинается хороший продукт?");
 });
 
 test("Chapter 01 can be replayed after reset", async ({ page }) => {
@@ -76,12 +52,8 @@ test("Chapter 01 can be replayed after reset", async ({ page }) => {
 
   await choose(page, "Начать заново");
 
-  await expectScene(page, "Подключение...");
+  await expectScene(page, "creator: not found");
   await expect(page.getByRole("dialog", { name: "Codex" })).toBeHidden();
-
-  await page.goto("/codex");
-  await expect(page.getByText("закрыто").first()).toBeVisible();
-  await expect(page.locator('[aria-label="Записи Codex"]')).not.toContainText("Языковая модель");
 });
 
 test.describe("mobile viewport", () => {
@@ -95,7 +67,7 @@ test.describe("mobile viewport", () => {
     await assertViewportIntegrity(page);
 
     await completeChapterOne(page);
-    await expectScene(page, "Дело закрыто.");
+    await expectScene(page, "«проблема человека».");
     await assertViewportIntegrity(page);
   });
 });
@@ -108,50 +80,16 @@ async function resetGame(page: Page) {
     }
   }, appStorageKeys);
   await page.reload();
-  await expectScene(page, "Подключение...");
+  await expectScene(page, "creator: not found");
   // The boot scene is server-rendered, so keyboard input is ignored until React hydrates.
   await page.waitForTimeout(320);
 }
 
 async function completeChapterOne(page: Page) {
-  await advanceAnyInput(page, "Дело №01. Непроверенный отчёт.");
-  await advanceAnyInput(page, "С чего начнёшь?");
-  // Four answers under a line of dialogue is the tallest question in the chapter; it must
-  // still clear the topbar and the status readout.
+  await advanceAnyInput(page, "С чего начинается хороший продукт?");
+  // Four answers under a line of dialogue is the tallest screen in the stub chapter.
   await assertViewportIntegrity(page);
-  await choose(page, "Посмотреть вход системы");
-  // The first move must get its own answer from Zero, not a shared one.
-  await expectScene(page, "Туда мы дойдём, и вскрывать будем целиком.");
-  await page.waitForTimeout(320);
-  await advanceToTitle(page);
-  await expectScene(page, "Откуда они взялись?");
-  await choose(page, "Она продолжила текст");
-  await choose(page, "Посмотреть ближе");
-  await choose(page, "Попробовать самой");
-  await choose(page, "зоне риска");
-  await choose(page, "Показать вход модели");
-  await choose(page, "Показать контекст");
-  await choose(page, "Прочитать это как система");
-  await choose(page, "И всё же был ответ");
-  await choose(page, "Так работает продолжение текста");
-  await choose(page, "Где ошибка продукта?");
-  await choose(page, "Принять решение");
-  await choose(page, "Остановить отчёт и пометить как непроверенный");
-  // The decision's cost must be visible, not only recorded in the Event Log.
-  await expect(page.locator('[aria-label="Что изменило решение"]')).toContainText("доверие");
-  await expect(page.locator('[aria-label="Что изменило решение"]')).toContainText("+16");
-  await expect(page.locator('[aria-label="Что изменило решение"]')).toContainText("задержка");
-  // The readout must not push the choices under the case rail.
-  await assertViewportIntegrity(page);
-  await choose(page, "Продолжить");
-  await choose(page, "Сохранить открытие");
-  // The belief question lands after the case, so the answer can come from what just happened.
-  await expectScene(page, "Что создаёт хороший продукт?");
-  await choose(page, "Возможность проверить каждый ответ.");
-  await expectScene(page, "«возможность проверить каждый ответ».");
-  await advanceAnyInput(page, "Сохранить это открытие?");
-  await choose(page, "Записать в Codex");
-  await expectScene(page, "Дело закрыто.");
+  await choose(page, "С проблемы человека");
 }
 
 async function choose(page: Page, label: string) {
@@ -163,10 +101,6 @@ async function choose(page: Page, label: string) {
 
 async function advanceAnyInput(page: Page, expectedText: string) {
   await advanceUntil(page, page.getByText(expectedText, { exact: true }));
-}
-
-async function advanceToTitle(page: Page) {
-  await advanceUntil(page, page.locator(".flow-scene-title").filter({ hasText: "Видеть" }));
 }
 
 /**

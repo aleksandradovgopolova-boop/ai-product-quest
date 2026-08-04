@@ -10,36 +10,40 @@ test("YAML content loads as the canonical Platform → Season → Chapter → Sc
   assert.equal(content.platformId, "ai-product-quest");
   assert.deepEqual(content.chapters.map((item) => item.id), ["chapter-01"]);
   assert.equal(content.seasons[0]?.chapterIds.length, 1);
-  assert.equal(chapter.initialSceneId, "incident-call");
-  assert.equal(chapter.scenes.length > 20, true);
-  assert.equal(chapter.sceneById["incident-call"].advanceMode, "any-input");
-  assert.equal(chapter.sceneById["incident-call"].autoNextSceneId, "incident-brief");
-  assert.equal(chapter.sceneById["zero-first-move"].choices?.length, 4);
-  assert.equal(chapter.sceneById["belief-ask"].choices?.length, 3);
-  assert.equal(chapter.sceneById["incident-brief"].autoNextSceneId, "zero-online");
-  assert.equal(chapter.sceneById["incident-brief"].presentation, "terminal");
-  assert.equal(chapter.sceneById["context-reveal"].evidence?.length, 3);
-  assert.equal(chapter.sceneById.decision.hypothesis?.id, "missing-source-trace");
-  assert.equal(chapter.sceneById.final.choices?.[0]?.action, "artifacts");
-  assert.deepEqual(chapter.codexEntryIds, ["language-model"]);
+  assert.equal(chapter.initialSceneId, "boot");
+  assert.equal(chapter.sceneById.boot.advanceMode, "any-input");
+  assert.equal(chapter.sceneById.boot.autoNextSceneId, "zero-intro");
+  assert.equal(chapter.sceneById["belief-question"].choices?.length, 4);
+  assert.deepEqual(chapter.stages, ["Войти", "Создать", "Проверить", "Пересобрать", "Запустить"]);
+  assert.deepEqual(chapter.codexEntryIds, ["llm-not-product"]);
   assert.deepEqual(chapter.artifactIds, ["assistant-blueprint"]);
+  assert.equal(chapter.mechanics.includes("zero-pet"), true);
 });
 
-test("the chapter opens on the incident, not on a greeting", () => {
+test("the chapter is about building a product, not auditing a report", () => {
   const content = loadGameContent();
   const chapter = content.chapterById["chapter-01"];
-  const openingLines = [chapter.sceneById["incident-call"], chapter.sceneById["incident-brief"]].flatMap((scene) => scene.lines);
+  const allText = [
+    chapter.title,
+    chapter.summary,
+    ...chapter.stages,
+    ...chapter.scenes.flatMap((scene) => [...scene.lines, ...(scene.prompt ?? []), ...(scene.choices ?? []).map((choice) => choice.label)]),
+  ].join("\n");
 
-  // The player must learn where they are, what broke, and how long they have before anyone asks them anything.
-  assert.ok(openingLines.some((line) => line.includes("АКСИОМА")), "the opening must name the world");
-  assert.ok(openingLines.some((line) => line.includes("внешний специалист")), "the opening must name the player's role");
-  assert.ok(openingLines.some((line) => line.includes("09:00")), "the opening must put the case on a clock");
-  assert.ok(openingLines.some((line) => line.includes("не найден во внутренних документах")), "the opening must state the failure");
+  // The opening names the world and the character in their canonical form.
+  assert.match(allText, /AXIOM/);
+  assert.match(allText, /ZERO/);
 
-  // The first question a player answers must come after the situation exists.
-  const questionIndex = chapter.scenes.findIndex((scene) => (scene.choices?.length ?? 0) > 1);
-  assert.equal(chapter.scenes[questionIndex]?.id, "zero-first-move");
-  assert.ok(chapter.scenes.slice(0, questionIndex).some((scene) => scene.id === "incident-brief"));
+  for (const forbidden of ["АКСИОМА", "Аксиома", "Ноль", "НОЛЬ", "Дело №", "Непроверенный отчёт", "инцидент", "внешний специалист"]) {
+    assert.doesNotMatch(allText, new RegExp(forbidden), `chapter text still mentions ${forbidden}`);
+  }
+
+  // The first question the player answers has no better answer to point at.
+  const question = chapter.sceneById["belief-question"];
+  assert.deepEqual(
+    (question.choices ?? []).filter((choice) => choice.tone === "primary"),
+    [],
+  );
 });
 
 test("every recorded answer keeps a variable and every placeholder resolves", () => {
@@ -55,8 +59,6 @@ test("every recorded answer keeps a variable and every placeholder resolves", ()
     }
   }
 
-  assert.deepEqual([...declared].sort(), ["approach", "belief", "prediction"]);
-
   for (const scene of chapter.scenes) {
     for (const line of [...scene.lines, ...(scene.prompt ?? [])]) {
       for (const [, name] of line.matchAll(/\{\{(\w+)\}\}/g)) {
@@ -65,11 +67,8 @@ test("every recorded answer keeps a variable and every placeholder resolves", ()
     }
   }
 
-  // Every branch of a question must record the answer, otherwise the recap goes blank.
-  for (const sceneId of ["zero-first-move", "belief-ask"]) {
-    for (const choice of chapter.sceneById[sceneId].choices ?? []) {
-      assert.ok(choice.setVariables, `${sceneId}/${choice.id} must record an answer`);
-    }
+  for (const choice of chapter.sceneById["belief-question"].choices ?? []) {
+    assert.ok(choice.setVariables, `belief-question/${choice.id} must record an answer`);
   }
 });
 
@@ -85,11 +84,7 @@ test("a scene that can be answered wrongly must not mark a preferred answer", ()
       }
 
       const marked = choices.filter((choice) => choice.tone === "primary").map((choice) => choice.id);
-
-      // A knowledge check: at least one answer leads to an error-toned scene.
       const hasWrongAnswer = choices.some((choice) => choice.nextSceneId && chapter.sceneById[choice.nextSceneId]?.tone === "error");
-
-      // An opinion poll: every answer leads to the same place, so none of them is better.
       const routed = choices.filter((choice) => choice.nextSceneId);
       const singleDestination = routed.length === choices.length && new Set(routed.map((choice) => choice.nextSceneId)).size === 1;
 

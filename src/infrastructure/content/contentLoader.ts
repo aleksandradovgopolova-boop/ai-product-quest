@@ -50,9 +50,13 @@ const contentRoot = path.join(repositoryRoot, "content");
 const schemaRoot = path.join(repositoryRoot, "schemas");
 const ajv = canUseCodeGeneration() ? new Ajv({ allErrors: true }) : undefined;
 const validators = new Map<string, ValidateFunction>();
+// `content/legacy/**` holds replaced chapters kept for history. They are data, not game content:
+// nothing may load, route to, or reference them, so they never enter the bundle.
 const embeddedContent = typeof import.meta.glob === "function"
   ? import.meta.glob("../../../content/**/*.yml", { eager: true, import: "default", query: "?raw" })
   : {};
+
+const legacyPathMarker = "content/legacy/";
 const embeddedSchemas = typeof import.meta.glob === "function"
   ? import.meta.glob("../../../schemas/*.json", { eager: true, import: "default", query: "?raw" })
   : {};
@@ -179,7 +183,15 @@ function canUseCodeGeneration() {
 
 function readEmbeddedOrFile(embedded: Record<string, string>, expectedSuffix: string, filePath: string) {
   const normalizedSuffix = expectedSuffix.replaceAll(path.sep, "/");
-  const embeddedEntry = Object.entries(embedded).find(([modulePath]) => modulePath.replaceAll(path.sep, "/").endsWith(normalizedSuffix));
+
+  if (normalizedSuffix.includes(legacyPathMarker) || filePath.replaceAll(path.sep, "/").includes(legacyPathMarker)) {
+    throw new Error(`Legacy content is quarantined and must not be loaded: ${expectedSuffix}`);
+  }
+
+  const embeddedEntry = Object.entries(embedded).find(([modulePath]) => {
+    const normalizedPath = modulePath.replaceAll(path.sep, "/");
+    return !normalizedPath.includes(legacyPathMarker) && normalizedPath.endsWith(normalizedSuffix);
+  });
 
   if (embeddedEntry) {
     return embeddedEntry[1];

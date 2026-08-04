@@ -4,7 +4,7 @@ import { interpolateLines } from "@/src/application/chapter-runner/chapterRunner
 import { cn } from "@/src/lib/utils";
 import { selectZeroState, speakingDurationMs } from "@/src/features/chapter-01/zeroState";
 import { ZeroSprite } from "@/src/features/chapter-01/view/ZeroSprite";
-import { CaseProgress } from "@/src/features/chapter-01/view/CaseProgress";
+import { StageProgress } from "@/src/features/chapter-01/view/StageProgress";
 import { ChoiceList } from "@/src/features/chapter-01/view/ChoiceList";
 import { CodexOverlay } from "@/src/features/chapter-01/view/CodexOverlay";
 import {
@@ -67,8 +67,8 @@ export function Chapter01View({
         <div className="flow-noise" aria-hidden="true" />
         {!isBare ? <SystemFrame /> : null}
         {!isBare ? (
-          <SystemTopbar caseShort={`ДЕЛО №${String(chapter.number).padStart(2, "0")}`} caseSummary={chapter.summary} caseTitle={chapter.title}>
-            <CaseProgress current={campaign.dashboard.currentStepIndex} steps={chapter.caseSteps} />
+          <SystemTopbar chapterShort={`ГЛАВА ${String(chapter.number).padStart(2, "0")}`} chapterSummary={chapter.summary} chapterTitle={chapter.title}>
+            <StageProgress current={campaign.dashboard.currentStageIndex} stages={chapter.stages} />
           </SystemTopbar>
         ) : null}
         {!isBare ? <SystemStatus value={status} /> : null}

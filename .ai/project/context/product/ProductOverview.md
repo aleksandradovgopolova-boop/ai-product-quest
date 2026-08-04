@@ -30,8 +30,8 @@ The player learns by making decisions inside a system. Concepts are unlocked thr
 ## Capabilities
 
 - Platform route shell: home, journey, play, Codex, artifacts, profile.
-- Chapter 01 vertical slice: "Дело №01: Непроверенный отчёт".
-- Cold open on the incident: the world, the player's role as an outside specialist, the clock, the failure, Zero, one investigative choice, and the chapter title. The belief question waits until the case is closed.
+- Chapter 01 vertical slice: "Глава I: Создать" — the player builds the first AI product inside AXIOM.
+- Cold open on an empty space: AXIOM boots, ZERO assembles itself, and the first question is asked before anything is built.
 - YAML content loader with schema validation.
 - Event Log driven campaign state.
 - Projection engine for dashboard, Codex, profile, and artifacts.

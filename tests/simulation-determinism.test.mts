@@ -11,36 +11,10 @@ test("simulation and event ids are deterministic for the same playthrough", () =
   function play() {
     let state = createInitialCampaignState(content, "chapter-01", at);
 
-    for (const sceneId of ["incident-brief", "zero-online", "zero-first-move"]) {
+    for (const sceneId of ["zero-intro", "belief-question"]) {
       state = advanceToScene({ content, state, sceneId, occurredAt: at });
     }
-
-    for (const choiceId of [
-      "start-report",
-    ]) {
-      state = runChoice({ content, state, choiceIdOrIndex: choiceId, occurredAt: at });
-    }
-
-    for (const sceneId of ["chapter-title", "origin"]) {
-      state = advanceToScene({ content, state, sceneId, occurredAt: at });
-    }
-
-    for (const choiceId of [
-      "continuation",
-      "inspect-principle",
-      "try",
-      "active-phase",
-      "show-input",
-      "reveal-context",
-      "read-as-system",
-      "still-answered",
-      "continuation",
-      "product-error",
-      "decide",
-      "regenerate",
-    ]) {
-      state = runChoice({ content, state, choiceIdOrIndex: choiceId, occurredAt: at });
-    }
+    state = runChoice({ content, state, choiceIdOrIndex: "belief-idea", occurredAt: at });
 
     return state;
   }
@@ -50,7 +24,11 @@ test("simulation and event ids are deterministic for the same playthrough", () =
 
   assert.deepEqual(first.eventLog, second.eventLog);
   assert.deepEqual(first.systemState, second.systemState);
-  assert.equal(first.systemState.trust, 23);
-  assert.equal(first.systemState.technicalDebt, 24);
-  assert.equal(first.currentSceneId, "decision-wrong");
+  // No decision has been priced yet in this chapter, so the system stays where it started.
+  assert.equal(first.systemState.trust, content.chapterById["chapter-01"].initialSystemState.trust);
+  assert.equal(first.currentSceneId, "belief-ack");
+  assert.deepEqual(
+    first.eventLog.map((event) => event.id),
+    second.eventLog.map((event) => event.id),
+  );
 });

@@ -513,7 +513,8 @@
 
 .progress-track {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
 }
 
 .progress-node {
@@ -716,7 +717,8 @@
 
   .progress-track {
     gap: 10px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
   }
 
   .progress-node {
@@ -766,10 +768,11 @@
     display: none;
   }
 
-  /* Without labels the six steps fit one row, so the rail stays a single band of dots. */
+  /* Without labels the stages fit one row, so the rail stays a single band of dots. */
   .progress-track {
     gap: 0;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
   }
 
   .flow-command {

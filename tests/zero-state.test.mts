@@ -48,9 +48,9 @@ test("every runtime situation maps to a state that exists in the sheet", () => {
 
 test("a scene whose every choice leaves the chapter closes the case", () => {
   const content = loadGameContent();
-  const final = content.chapterById["chapter-01"].sceneById.final;
+  const leaving = content.chapterById["chapter-01"].sceneById["belief-ack"];
 
-  assert.equal(selectZeroState({ scene: final, isProcessing: false }), "closed");
+  assert.equal(selectZeroState({ scene: leaving, isProcessing: false }), "closed");
 
   // A mixed scene is still a question, not an ending.
   const mixed = scene({

@@ -146,9 +146,9 @@ export function projectCohortReport(runs: CohortRun[]): CohortReport {
     },
     logCriterion(
       "abandoned-in-opening",
-      "Не доходят от начала до расследования",
+      "Не доходят от начала до сборки",
       { kind: "max", value: 1 },
-      count(runs, (run) => run.report.opening.abandonedBeforeInvestigation),
+      count(runs, (run) => run.report.opening.abandonedBeforeBuild),
     ),
   ];
 

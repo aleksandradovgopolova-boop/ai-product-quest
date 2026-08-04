@@ -178,8 +178,8 @@ function buildStateSnapshot(params: {
 }): CampaignState {
   const chapter = getChapter(params.content, params.currentChapterId);
   const scene = getScene(chapter, params.currentSceneId);
-  const currentStepIndex = Math.min(Math.max(scene.stepIndex, 1), chapter.caseSteps.length);
-  const currentStepLabel = chapter.caseSteps[currentStepIndex - 1] ?? chapter.caseSteps[0] ?? "Дело";
+  const currentStageIndex = Math.min(Math.max(scene.stepIndex, 1), chapter.stages.length);
+  const currentStageLabel = chapter.stages[currentStageIndex - 1] ?? chapter.stages[0] ?? "Создать";
   const decisions = { ...params.decisions };
   const unlockedCodexEntryIds = Array.from(params.unlockedCodexEntryIds);
   const artifacts = [...params.artifacts];
@@ -192,7 +192,7 @@ function buildStateSnapshot(params: {
     eventLog: [...params.eventLog],
     systemState: { ...params.systemState },
     system: {
-      status: getSystemStatus(scene, currentStepIndex, chapter.caseSteps.length),
+      status: getSystemStatus(scene, currentStageIndex, chapter.stages.length),
       lastMessage: params.lastMessage,
     },
     decisions,
@@ -201,15 +201,15 @@ function buildStateSnapshot(params: {
     engineerProfile: {
       title: "AI Product Engineer",
       xp: calculateXp(params.eventLog, unlockedCodexEntryIds.length, artifacts.length),
-      rank: artifacts.length > 0 ? "Incident Analyst" : "Trainee",
-      skills: unlockedCodexEntryIds.includes("language-model") ? ["Отделять модель от продукта"] : [],
+      rank: artifacts.length > 0 ? "Product Builder" : "Trainee",
+      skills: unlockedCodexEntryIds.includes("llm-not-product") ? ["Отличать модель от продукта"] : [],
     },
     dashboard: {
-      caseTitle: chapter.title,
-      caseSummary: chapter.summary,
-      currentStepLabel,
-      currentStepIndex,
-      totalSteps: chapter.caseSteps.length,
+      chapterTitle: chapter.title,
+      chapterSummary: chapter.summary,
+      currentStageLabel,
+      currentStageIndex,
+      totalStages: chapter.stages.length,
       completedDecisionCount: Object.keys(decisions).length,
       unlockedCodexCount: unlockedCodexEntryIds.length,
       artifactCount: artifacts.length,
@@ -218,7 +218,7 @@ function buildStateSnapshot(params: {
   };
 }
 
-function getSystemStatus(scene: { tone?: string; visual?: string; choices?: unknown[]; id: string }, currentStepIndex: number, totalSteps: number) {
+function getSystemStatus(scene: { tone?: string; visual?: string; choices?: unknown[]; id: string }, currentStageIndex: number, totalStages: number) {
   if (scene.tone === "error") {
     return "СЛЕД НЕ СОВПАЛ";
   }
@@ -231,12 +231,9 @@ function getSystemStatus(scene: { tone?: string; visual?: string; choices?: unkn
     return "КОНТЕКСТ ОТКРЫТ";
   }
 
-  if (scene.id === "decision" || scene.id === "codex-prompt") {
-    return "ОЖИДАЕТ РЕШЕНИЯ";
-  }
-
-  if (currentStepIndex === totalSteps && scene.id === "final") {
-    return "ДЕЛО ЗАКРЫТО";
+  // The last stage is the launch: nothing is being asked any more.
+  if (currentStageIndex === totalStages && (scene.choices ?? []).length === 0) {
+    return "ПРОДУКТ ЗАПУЩЕН";
   }
 
   if (scene.choices && scene.choices.length > 0) {

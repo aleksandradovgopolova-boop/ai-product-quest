@@ -148,9 +148,9 @@ Animation must not decorate the interface. It should create reading rhythm and m
 - Codex appears as system memory access: `ОТКРЫВАЮ ПАМЯТЬ...`, then `CODEX`, then unlocked entries.
 - Avoid episode terminology in the in-game HUD. Prefer case terms: дело, инцидент, решение, проверка, след, источник, вывод.
 
-## Zero's Sprite
+## ZERO's Sprite
 
-Zero has a body: a small pixel sprite in the lower-left corner, outside the reading column.
+ZERO has a body: a small pixel sprite in the lower-left corner, outside the reading column.
 
 It is allowed because it is system state, not decoration. Its rules:
 
@@ -158,7 +158,7 @@ It is allowed because it is system state, not decoration. Its rules:
   success verdict, the priced decision, Codex writing, waiting for a choice, a closed case. No pose
   is authored by hand in content, and a scene never carries a sprite field.
 - It never appears on `chrome: bare` scenes: the boot terminal and the chapter title belong to the
-  machine, not to Zero.
+  machine, not to ZERO.
 - It is positioned outside the reading column and never changes the layout of the text.
 - It is `aria-hidden`: everything it says is already said by the text and the status readout.
 - `prefers-reduced-motion` freezes it on the first frame of the current state, and that frame must
@@ -175,7 +175,7 @@ The current MVP uses three noticeable effects:
 
 1. Text line reveal, adapted from the React Bits text-animation category.
 2. Rare system glitch on error states, adapted as a quiet CSS failure pulse.
-3. Zero's state sprite, animated as a stepped sheet under the rules above.
+3. ZERO's state sprite, animated as a stepped sheet under the rules above.
 
 The background uses a calm procedural noise/glow field inspired by Claude Directory shader and loader experiments. It is not a particle system, not a 3D scene, and not a landing-page hero background.
 
@@ -217,4 +217,4 @@ Before shipping any visual change, verify:
 - Motion is used from `motion/react`;
 - no more than two noticeable React Bits-style effects in the episode;
 - background effect is calm and does not compete with the text;
-- Zero's sprite reflects a real system state, stays out of the reading column, and is absent on bare scenes.
+- ZERO's sprite reflects a real system state, stays out of the reading column, and is absent on bare scenes.

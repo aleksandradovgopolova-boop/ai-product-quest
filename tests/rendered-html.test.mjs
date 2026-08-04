@@ -48,20 +48,18 @@ test("route contract renders distinct platform surfaces", async () => {
   }
 
   assert.match(htmlByRoute.get("/") ?? "", /ПРОДОЛЖИТЬ КАМПАНИЮ/);
-  assert.match(htmlByRoute.get("/") ?? "", /Запустить дело/);
-  assert.doesNotMatch(htmlByRoute.get("/") ?? "", /Система подготовила отчёт/);
+  assert.match(htmlByRoute.get("/") ?? "", /Запустить главу/);
 
   assert.match(htmlByRoute.get("/journey") ?? "", /КАРТА СЕЗОНА/);
-  assert.match(htmlByRoute.get("/journey") ?? "", /Дело №01: Непроверенный отчёт/);
+  assert.match(htmlByRoute.get("/journey") ?? "", /Глава I: Создать/);
 
   const playInitialMarkup = (htmlByRoute.get("/play/chapter-01") ?? "").split('<script id="_R_">')[0] ?? "";
-  assert.match(playInitialMarkup, /Подключение\.\.\./);
-  // The boot terminal belongs to the machine: Zero has no body there yet.
+  assert.match(playInitialMarkup, /AXIOM/);
+  assert.match(playInitialMarkup, /creator: not found/);
+  // The boot terminal belongs to the machine: ZERO has no body there yet.
   assert.doesNotMatch(playInitialMarkup, /zero-sprite/);
-  // Boot output belongs to the machine: the speaker label appears only once Zero starts talking.
+  // Boot output belongs to the machine: the speaker label appears only once ZERO starts talking.
   assert.doesNotMatch(playInitialMarkup, /flow-prompt/);
-  assert.doesNotMatch(playInitialMarkup, /ZERO/);
-  assert.doesNotMatch(playInitialMarkup, /Система подготовила отчёт/);
   assert.doesNotMatch(playInitialMarkup, /РЕШЕНИЕ/);
   assert.doesNotMatch(playInitialMarkup, /ОЖИДАЕТ ВЫБОР/);
   assert.match(playInitialMarkup, /нажмите любую клавишу \/ тапните/);
@@ -70,6 +68,10 @@ test("route contract renders distinct platform surfaces", async () => {
   assert.match(htmlByRoute.get("/codex") ?? "", /Системная память/);
   assert.match(htmlByRoute.get("/artifacts") ?? "", /След решений/);
   assert.match(htmlByRoute.get("/profile") ?? "", /AI Product Engineer/);
+  // The stage rail replaced the case rail: nothing may still speak about a case.
+  for (const route of routes) {
+    assert.doesNotMatch(htmlByRoute.get(route) ?? "", /АКТИВНОЕ ДЕЛО|ДЕЛО №/);
+  }
 
   const uniqueBodies = new Set(routes.map((route) => htmlByRoute.get(route)));
   assert.equal(uniqueBodies.size, routes.length);
@@ -143,7 +145,7 @@ test("visual stack contract remains explicit", async () => {
   assert.match(design, /Open Design/);
   assert.match(design, /If a new element can be removed without losing the player's understanding/i);
   // The sprite is only allowed while the contract says what it is for.
-  assert.match(design, /Zero's Sprite/);
+  assert.match(design, /ZERO's Sprite/);
   assert.match(design, /aria-hidden/);
   assert.match(design, /three noticeable effects/);
   assert.match(packageJson, /"motion":/);

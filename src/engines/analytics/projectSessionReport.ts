@@ -23,8 +23,8 @@ export type SessionReport = {
   elapsedMs?: number;
   opening: {
     completed: boolean;
-    reachedInvestigation: boolean;
-    abandonedBeforeInvestigation: boolean;
+    reachedBuild: boolean;
+    abandonedBeforeBuild: boolean;
     answers: Record<string, string>;
     elapsedMs?: number;
   };
@@ -52,8 +52,11 @@ export type SessionReport = {
   notInstrumented: string[];
 };
 
-/** The chapter opens on the incident, so the first milestone is the investigation itself. */
-const investigationSceneId = "origin";
+/**
+ * The first milestone of the chapter: the player answered ZERO and moved past the intro.
+ * It moves to the assembly scene once the product build lands.
+ */
+const buildStartSceneId = "belief-ack";
 const finalSceneId = "final";
 
 /** The one decision that holds the report back until a source exists. */
@@ -114,7 +117,7 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
 
   const startedAt = events[0]?.occurredAt;
   const lastEventAt = events.at(-1)?.occurredAt;
-  const investigationAt = firstSceneEntryAt(sceneEntries, investigationSceneId);
+  const buildStartedAt = firstSceneEntryAt(sceneEntries, buildStartSceneId);
 
   // Read attempts from the log, not from state.decisions: that record is keyed by
   // decisionId, so a retry overwrites nothing and the order of attempts is lost.
@@ -136,11 +139,11 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
     lastEventAt,
     elapsedMs: durationMs(startedAt, lastEventAt),
     opening: {
-      completed: Boolean(investigationAt),
-      reachedInvestigation: Boolean(investigationAt),
-      abandonedBeforeInvestigation: !investigationAt,
+      completed: Boolean(buildStartedAt),
+      reachedBuild: Boolean(buildStartedAt),
+      abandonedBeforeBuild: !buildStartedAt,
       answers,
-      elapsedMs: durationMs(startedAt, investigationAt),
+      elapsedMs: durationMs(startedAt, buildStartedAt),
     },
     scenesEntered: sceneEntries.length,
     uniqueScenesEntered: seenScenes.size,

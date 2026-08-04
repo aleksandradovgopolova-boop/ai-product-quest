@@ -11,34 +11,12 @@ const storageKeys = [
   "ai-product-quest-mission-v2",
   "ai-product-quest-progress",
 ];
-// The opening advances on any input until Zero asks where to start.
+// The stub chapter is three screens: boot, the question, the acknowledgement.
 const openingPath = [
-  { advance: true, expect: "Дело №01. Непроверенный отчёт." },
-  { advance: true, expect: "Я Zero. Я живу внутри АКСИОМЫ." },
-  { advance: true, expect: "С чего начнёшь?" },
-  { choose: "Прочитать отчёт" },
-  { advance: true, expect: "AI Product Quest" },
-  // The title card advances itself; pressing a key here would skip the investigation opener.
-  { await: "Откуда они взялись?" },
+  { advance: true, expect: "С чего начинается хороший продукт?" },
+  { choose: "С проблемы человека" },
 ];
-const happyPath = [
-  "Она продолжила текст",
-  "Посмотреть ближе",
-  "Попробовать самой",
-  "зоне риска",
-  "Показать вход модели",
-  "Показать контекст",
-  "Прочитать это как система",
-  "И всё же был ответ",
-  "Так работает продолжение текста",
-  "Где ошибка продукта?",
-  "Принять решение",
-  "Остановить отчёт и пометить как непроверенный",
-  "Продолжить",
-  "Сохранить открытие",
-  "Хорошая команда.",
-  "Записать в Codex",
-];
+const happyPath = [];
 const viewports = [
   { isMobile: false, name: "desktop", viewport: { height: 720, width: 1280 } },
   { isMobile: true, name: "mobile", viewport: { height: 844, width: 390 } },
@@ -103,7 +81,7 @@ async function resetChapter(page) {
     }
   }, storageKeys);
   await page.reload({ waitUntil: "networkidle" });
-  await page.getByText("Подключение...", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  await page.getByText("creator: not found", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
 async function completeOpening(page) {
@@ -128,7 +106,7 @@ async function completeChapter(page) {
     await choose(page, label);
   }
 
-  await page.getByText("Дело закрыто.", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
+  await page.getByText("«проблема человека».", { exact: true }).waitFor({ state: "visible", timeout: 5_000 });
 }
 
 async function choose(page, label) {

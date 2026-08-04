@@ -40,9 +40,11 @@ test("migrates ai-product-quest-flow-v1 into the canonical campaign save", () =>
 
   const state = loadCampaignState(content, storage, "2026-07-29T10:00:00.000Z");
 
-  assert.equal(state.currentSceneId, "decision");
+  // The scene that save pointed at belongs to the replaced chapter, so the run restarts at the
+  // new opening. What the player earned survives, under the Codex entry that replaced it.
+  assert.equal(state.currentSceneId, "boot");
   assert.equal(state.variables.prediction, "зоне риска");
-  assert.deepEqual(state.unlockedCodexEntryIds, ["language-model"]);
+  assert.deepEqual(state.unlockedCodexEntryIds, ["llm-not-product"]);
   assert.ok(storage.getItem(campaignStorageKey));
   assert.equal(storage.getItem(legacyFlowStorageKey), null);
   assert.equal(state.eventLog.some((event) => event.type === "legacy.save_migrated"), true);
@@ -87,10 +89,39 @@ test("projects a saved Event Log written before choice.submitted carried variabl
 
   const state = loadCampaignState(content, storage, "2026-07-29T10:10:00.000Z");
 
-  assert.equal(state.currentSceneId, "experiment-feedback");
-  assert.equal(state.variables.prediction, "зоне риска");
-  assert.equal(state.variables.belief, undefined);
-  assert.equal(state.variables.approach, undefined);
+  // A log written against the replaced chapter cannot be projected scene by scene: it is
+  // rebuilt from the new opening instead of dropping the player into a scene that is gone.
+  assert.equal(state.currentSceneId, "boot");
+  assert.equal(state.eventLog.some((event) => event.type === "legacy.save_migrated"), true);
+  assert.ok(storage.getItem(campaignStorageKey));
+});
+
+test("a rebuilt save keeps the Codex the player already earned", () => {
+  const content = loadGameContent();
+  const storage = new MemoryStorage();
+  const campaignId = "ai-product-quest:campaign:v1";
+  storage.setItem(
+    campaignStorageKey,
+    JSON.stringify({
+      schemaVersion: 1,
+      campaignId,
+      eventLog: [
+        { id: `${campaignId}:event:0001`, sequence: 1, type: "campaign.started", occurredAt: "2026-07-29T10:00:00.000Z", payload: { campaignId } },
+        {
+          id: `${campaignId}:event:0002`,
+          sequence: 2,
+          type: "codex.entry_unlocked",
+          occurredAt: "2026-07-29T10:00:00.000Z",
+          payload: { entryId: "language-model", chapterId: "chapter-01" },
+        },
+      ],
+    }),
+  );
+
+  const state = loadCampaignState(content, storage, "2026-07-29T10:20:00.000Z");
+
+  assert.equal(state.currentSceneId, "boot");
+  assert.deepEqual(state.unlockedCodexEntryIds, ["llm-not-product"]);
 });
 
 test("migrates mission-v2 and progress saves, then removes all legacy keys", () => {
@@ -110,7 +141,7 @@ test("migrates mission-v2 and progress saves, then removes all legacy keys", () 
 
   const state = loadCampaignState(content, storage, "2026-07-29T10:05:00.000Z");
 
-  assert.equal(state.currentSceneId, "context-reveal");
+  assert.equal(state.currentSceneId, "boot");
   assert.ok(storage.getItem(campaignStorageKey));
   assert.equal(storage.getItem(legacyMissionStorageKey), null);
   assert.equal(storage.getItem(legacyProgressStorageKey), null);
