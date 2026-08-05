@@ -267,7 +267,8 @@ def run(task_text, signals, child_root: Path, features_dir=None,
         author=False, author_proposer=None, install_deps=True,
         resume=False, force_resume=False, base=None, write_scope=None, replan=False,
         review_fix_attempts=0, calibrated_enforcement=True, ui_evidence=None,
-        context_shadow=False, context_hybrid=False, reevaluate_only=False):
+        context_shadow=False, context_hybrid=False, reevaluate_only=False,
+        progressive_escalation=False):
     signals = dict(signals or {})
     signals.setdefault("task_text", task_text)
     child_root = Path(child_root)
@@ -1230,9 +1231,20 @@ def run(task_text, signals, child_root: Path, features_dir=None,
                                         "attempt_id": _attempt_id, **_cost_rep})
             # v3.10.0 Usage Truth: персист КАЖДОГО вызова (writer/reviewer/fix-loop/fallback/escalation)
             # в ledger задачи + продукта. Честный usage_status; неизвестное -> unavailable, не 0.
+            # v3.24.0 Cost & Architecture Accuracy: extra_context штампуется на все записи —
+            # task_type/workflow/risk/size/writer_tier/execution_mode/stack для economic alternatives.
             try:
                 import usage_ledger as _ul
-                _ul.append(child_root, fid, _stats, run_id=fid)
+                _extra = {
+                    "task_type": signals.get("task_type"),
+                    "workflow": (_plan.get("base_workflow") if isinstance(_plan, dict) else None),
+                    "risk": signals.get("risk"),
+                    "size": signals.get("size"),
+                    "writer_tier": ((_model_resolution or {}).get("writer") or {}).get("tier"),
+                    "execution_mode": "sequential" if signals.get("_sequence_internal") else "single",
+                    "stack": ",".join(s.get("language", "") for s in (signals.get("_stacks") or [])) or None,
+                }
+                _ul.append(child_root, fid, _stats, run_id=fid, extra_context={k: v for k, v in _extra.items() if v is not None})
             except Exception:  # noqa: BLE001 — учёт usage не должен ронять прогон
                 pass
         try:
@@ -1509,8 +1521,11 @@ def selftest():
         expect("planned: active-work зарегистрирована",
                (root / ".ai" / "runtime" / "active-work.yaml").exists())
         expect("треки VISUAL/ANALYTICS в отчёте", {"VISUAL", "ANALYTICS"} <= set(r["required_tracks"]))
-        expect("гейты треков агрегированы (ux_review/analytics_readiness)",
-               {"ux_review", "analytics_readiness"} <= set(r["gates"]))
+        expect("гейты треков агрегированы (ux_review/analytics_design_readiness)",
+               {"ux_review", "analytics_design_readiness"} <= set(r["gates"]))
+        # v3.27.6: analytics_runtime_verification НЕ входит в дорелизный RunPlan (только после release)
+        expect("analytics_runtime_verification НЕ в дорелизном RunPlan",
+               "analytics_runtime_verification" not in set(r["gates"]))
 
     # v3.0-rc4 (P0.1): immutable resume — смена классификации/policy при resume блокируется (нужен replan)
     with tempfile.TemporaryDirectory() as td:

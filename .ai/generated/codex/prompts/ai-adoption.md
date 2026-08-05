@@ -30,7 +30,7 @@ sequential). Пользователь описывает задачу обычн
 - VerificationEvidence
 
 ## Blocking gates
-intake_completeness, analytics_readiness, documentation_updated
+intake_completeness, analytics_design_readiness, documentation_updated
 
 ## Правила
 - Writer и judge разделены; judge read-only к проверяемому артефакту.
