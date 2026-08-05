@@ -164,7 +164,7 @@ gates:
     review_mode: read-only
     human_approval: false
     checklist: rules/quality/code-review-etiquette.yaml
-    applicability: [ENGINEERING, CRITICAL]
+    applicability: [ENGINEERING, CRITICAL, PRODUCT]  # v3.27.1 WP2: PRODUCT добавлен — продуктовая full-stack функция требует независимого ревью кода
     stale_detection: {bind_to: tested_revision}
     required_evidence: [reviewed_revision, blockers_closed]
 
@@ -176,7 +176,7 @@ gates:
     responsible_role: security-reviewer
     review_mode: read-only
     human_approval: {required_when: [privileged, destructive, secret_boundary_change]}
-    applicability: [ENGINEERING, CRITICAL]   # INCIDENT — post-MVP (не определён); инциденты идут через CRITICAL
+    applicability: [ENGINEERING, CRITICAL, PRODUCT]   # v3.27.1 WP2: PRODUCT добавлен; INCIDENT — post-MVP (не определён); инциденты идут через CRITICAL
     stale_detection: {bind_to: tested_revision}
     required_evidence: [no_secrets, no_injection_surface, deps_approved]
 
@@ -193,7 +193,7 @@ gates:
     review_mode: read-only
     human_approval: false
     required_when: [architecture_change, new_service, cross_boundary_change, breaking_api, data_migration, new_integration, deployment_change]
-    applicability: [ENGINEERING, AI_FEATURE]   # членство в workflow; фактическое срабатывание — по required_when
+    applicability: [ENGINEERING, AI_FEATURE, PRODUCT, CRITICAL]   # v3.27.1 WP2: PRODUCT и CRITICAL добавлены — архитектурно значимые изменения требуют проверки независимо от base workflow
     checklist: rules/quality/architecture-review.yaml
     stale_detection: {bind_to: tested_revision}
     required_evidence: [reviewed_revision, architecture_boundaries_ok]
@@ -213,7 +213,7 @@ gates:
     validator: validate-deploy-readiness       # runnable: tools/deploy_readiness.py
     human_approval: false
     required_when: [deployment_change, new_service, infrastructure_change]
-    applicability: [ENGINEERING, AI_FEATURE]   # членство; фактическое срабатывание — по required_when
+    applicability: [ENGINEERING, AI_FEATURE, PRODUCT, CRITICAL]   # v3.27.1 WP2: PRODUCT и CRITICAL добавлены — изменение поставки требует проверки зрелости независимо от base workflow
     checklist: rules/quality/deploy-readiness.yaml
     stale_detection: {bind_to: tested_revision}
     required_evidence: [deploy_maturity, rollback_declared]
@@ -345,9 +345,12 @@ gates:
     stale_detection: {bind_to: artifact_hashes}
     required_evidence: [components_from_design_system, new_components_justified]
 
-  analytics_readiness:
-    id: analytics_readiness
-    purpose: Аналитика описана — tracking plan, event schema, метрики и dashboard-спецификация.
+  analytics_design_readiness:
+    id: analytics_design_readiness
+    purpose: >
+      Аналитика спроектирована ДО merge: tracking plan, event schema, product metrics,
+      dashboard spec. v3.27.2 WP3: разделён из analytics_readiness — design-часть применяется
+      до merge, runtime-verification (events_verified_live) — после deploy.
     stage: analytics-review
     blocking: true
     responsible_role: analytics-reviewer
@@ -355,7 +358,23 @@ gates:
     source_of_truth: context/product/MetricCatalog.md
     applicability: [PRODUCT, ANALYTICS, ADOPTION]
     stale_detection: {bind_to: artifact_hashes}
-    required_evidence: [tracking_plan, event_schema, product_metrics, dashboard_spec, events_verified_live]
+    required_evidence: [tracking_plan, event_schema, product_metrics, dashboard_spec]
+
+  analytics_runtime_verification:
+    id: analytics_runtime_verification
+    purpose: >
+      Аналитика проверена ПОСЛЕ deploy: события реально приходят, свойства корректны,
+      нет PII, идентификация и cohort работают, dashboard получает данные.
+      v3.27.2 WP3: разделён из analytics_readiness — применяется после release.
+    stage: post-release
+    blocking: true
+    responsible_role: analytics-reviewer
+    review_mode: read-only
+    source_of_truth: context/product/MetricCatalog.md
+    applicability: [PRODUCT, ANALYTICS, ADOPTION]
+    stale_detection: {bind_to: release_sha}
+    required_evidence: [events_verified_live, no_pii_in_events, cohort_identification_works, dashboard_receives_data]
+    enforced_by: post-release-readout  # v3.27.6: связан с PostReleaseReadout (PRR), который проверяет delivery_receipt.sha_verified
 
   documentation_updated:
     id: documentation_updated

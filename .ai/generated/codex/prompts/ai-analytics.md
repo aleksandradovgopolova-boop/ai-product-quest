@@ -27,7 +27,7 @@ sequential). Пользователь описывает задачу обычн
 - VerificationEvidence
 
 ## Blocking gates
-intake_completeness, analytics_readiness, event_contract_consistency, implementation_verification
+intake_completeness, analytics_design_readiness, event_contract_consistency, implementation_verification
 
 ## Правила
 - Writer и judge разделены; judge read-only к проверяемому артефакту.

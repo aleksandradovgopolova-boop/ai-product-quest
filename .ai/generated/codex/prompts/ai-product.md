@@ -31,7 +31,7 @@ sequential). Пользователь описывает задачу обычн
 - VerificationEvidence
 
 ## Blocking gates
-intake_completeness, concurrency_preflight, discovery_completeness, requirements, specification, event_contract_consistency, plan_readiness, implementation_verification, stakeholder_readiness
+intake_completeness, concurrency_preflight, discovery_completeness, requirements, specification, event_contract_consistency, plan_readiness, implementation_verification, code_review, security, architecture_review, deploy_readiness, stakeholder_readiness
 
 ## Правила
 - Writer и judge разделены; judge read-only к проверяемому артефакту.

@@ -29,7 +29,7 @@ sequential). Пользователь описывает задачу обычн
 - SecurityReview
 
 ## Blocking gates
-intake_completeness, concurrency_preflight, plan_readiness, implementation_verification, security, code_review
+intake_completeness, concurrency_preflight, plan_readiness, implementation_verification, security, code_review, architecture_review, deploy_readiness
 
 ## Правила
 - Writer и judge разделены; judge read-only к проверяемому артефакту.
