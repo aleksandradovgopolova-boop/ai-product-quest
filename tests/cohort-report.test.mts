@@ -8,8 +8,12 @@ import {
 import type { SessionReport } from "../src/engines/analytics/projectSessionReport";
 
 type RunShape = {
-  firstDecisionId?: string;
-  correctedAfterFeedback?: boolean;
+  /** Every change the player spent went where the run pointed. `undefined` = nothing to link. */
+  changesLinkedToEvidence?: boolean | null;
+  /** The product could still act without asking once the changes were spent. */
+  actsUnaskedAtFinish?: boolean;
+  /** The first build already had boundaries, before any run showed why. */
+  boundedOnFirstBuild?: boolean;
   abandoned?: boolean;
   elapsedMinutes?: number;
   chapterVersion?: string;
@@ -28,9 +32,10 @@ function makeRun(participant: string, shape: RunShape = {}): CohortRun {
   const report = {
     elapsedMs: (shape.elapsedMinutes ?? 9) * 60_000,
     opening: { abandonedBeforeBuild: shape.abandoned ?? false },
-    decision: {
-      first: shape.firstDecisionId === undefined ? { decisionId: "quarantine-report" } : { decisionId: shape.firstDecisionId },
-      correctedAfterFeedback: shape.correctedAfterFeedback ?? false,
+    product: {
+      changesLinkedToEvidence: shape.changesLinkedToEvidence === null ? undefined : (shape.changesLinkedToEvidence ?? true),
+      actsUnaskedAtFinish: shape.actsUnaskedAtFinish ?? false,
+      boundedOnFirstBuild: shape.boundedOnFirstBuild ?? false,
     },
   } as unknown as SessionReport;
 
@@ -67,33 +72,49 @@ test("a clean cohort of eight passes every criterion", () => {
   assert.equal(report.accepted, true);
 });
 
-test("a cohort that reached the safe decision by elimination is not accepted", () => {
-  // Everyone ends on the safe decision, but five of eight only after negative feedback.
-  const corrected: RunShape = { firstDecisionId: "send-draft", correctedAfterFeedback: true };
-  const report = projectCohortReport(makeCohort([corrected, corrected, corrected, corrected, corrected]));
+test("a cohort that spent its changes somewhere the run never pointed is not accepted", () => {
+  const unlinked: RunShape = { changesLinkedToEvidence: false };
+  const report = projectCohortReport(makeCohort([unlinked, unlinked, unlinked, unlinked]));
 
-  assert.equal(criterion(report, "corrected-after-feedback").observed, 5);
-  assert.equal(criterion(report, "corrected-after-feedback").met, false);
-  assert.equal(criterion(report, "safe-decision-first").observed, 3);
-  assert.equal(criterion(report, "safe-decision-first").met, false);
+  assert.equal(criterion(report, "changes-linked-to-evidence").observed, 4);
+  assert.equal(criterion(report, "changes-linked-to-evidence").met, false);
   assert.equal(report.accepted, false);
+});
+
+test("leaving the product able to act unasked fails the cohort", () => {
+  // The chapter is about this one thing: they saw it act without being asked, they held two
+  // changes, and they launched it anyway.
+  const unasked: RunShape = { actsUnaskedAtFinish: true };
+  const report = projectCohortReport(makeCohort([unasked, unasked]));
+
+  assert.equal(criterion(report, "still-acts-unasked").observed, 2);
+  assert.equal(criterion(report, "still-acts-unasked").met, false);
+  assert.equal(report.accepted, false);
+});
+
+test("a cohort that already knew is flagged, even while every criterion passes", () => {
+  // Five of eight built boundaries before any run showed them why. The evidence-linking number
+  // is then measured on fewer real faults and says less about what the chapter taught.
+  const knew: RunShape = { boundedOnFirstBuild: true };
+  const report = projectCohortReport(makeCohort([knew, knew, knew, knew, knew]));
+
+  assert.equal(criterion(report, "changes-linked-to-evidence").met, true);
+  assert.equal(criterion(report, "still-acts-unasked").met, true);
   assert.equal(
-    report.warnings.some((warning) => warning.includes("только после обратной связи")),
+    report.warnings.some((warning) => warning.includes("ещё до первого прогона")),
     true,
   );
 });
 
-test("the interpretation rule fires while the first-attempt criterion still passes", () => {
-  // Five reached it unaided — the criterion is met — but three more got there by
-  // elimination, which is over the limit. The pair must not be read as 5 of 8 understanding.
-  const corrected: RunShape = { firstDecisionId: "send-draft", correctedAfterFeedback: true };
-  const report = projectCohortReport(makeCohort([corrected, corrected, corrected]));
+test("a run with nothing to link leaves the criterion undecided rather than failed", () => {
+  const report = projectCohortReport(makeCohort([{ changesLinkedToEvidence: null }]));
 
-  assert.equal(criterion(report, "safe-decision-first").met, true);
-  assert.equal(criterion(report, "corrected-after-feedback").met, false);
+  // Seven of eight linked, but the eighth decides nothing, so the criterion cannot be read.
+  assert.equal(criterion(report, "changes-linked-to-evidence").observed, 7);
+  assert.equal(criterion(report, "changes-linked-to-evidence").met, undefined);
   assert.equal(report.accepted, false);
   assert.equal(
-    report.warnings.some((warning) => warning.includes("не подтверждает понимание")),
+    report.warnings.some((warning) => warning.includes("нечего было связывать")),
     true,
   );
 });
@@ -129,7 +150,7 @@ test("missing interview scoring leaves interview criteria undecided rather than 
   assert.equal(report.gate.met, undefined);
   assert.equal(report.gate.band, "undecidable");
   // Signals read from the Event Log are unaffected by a missing interview.
-  assert.equal(criterion(report, "safe-decision-first").met, true);
+  assert.equal(criterion(report, "changes-linked-to-evidence").met, true);
   assert.equal(report.accepted, false);
 });
 

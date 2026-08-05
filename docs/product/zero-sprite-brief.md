@@ -102,6 +102,21 @@ states.
 Then drop the assembled PNG over the placeholder and run `npm run test:foundation`. If the geometry
 changed, the only file to touch is `zeroSpriteSheet` in `src/features/chapter-01/zeroState.ts`.
 
+## Expression beyond the nine rows
+
+The chapter asks ZERO for far more than nine moods — amusement, scepticism, a facepalm, a
+double-take. None of that needs a new row. Expression is assembled from three parts: a row of this
+sheet, a motion treatment laid over it, and where ZERO is standing. `wrong` recoiling reads as a
+facepalm; `idle` leaning in reads as someone settling in to watch; `waiting` held still reads as
+deadpan. The pairings live in `content/chapters/chapter-01/zero.yml`.
+
+This is why the sheet stays at nine rows: the art carries what a body looks like, and the runtime
+carries what it is doing. Draw the nine well and the rest is free.
+
+One consequence worth knowing while drawing: under `prefers-reduced-motion` the gesture is dropped
+entirely, so the row alone has to carry the state. That is the same requirement as frame 1 of each
+row carrying it — see above.
+
 ## What not to do
 
 - No extra rows "for later": the component maps rows by index, and an unused row is dead weight.

@@ -7,6 +7,7 @@ import type {
   ProductConfiguration,
   ProductOption,
   ProductProblem,
+  SceneCapability,
 } from "@/src/domain/campaign/types";
 
 export const emptyConfiguration: ProductConfiguration = {
@@ -214,6 +215,42 @@ export function collectConfigurationEffects(
   }
 
   return effects;
+}
+
+/**
+ * Which question a build scene is on. Derived from what the product already has rather than
+ * stored, so reloading mid-build lands the player back where they were.
+ */
+export function currentBuildStep(capability: SceneCapability, configuration: ProductConfiguration) {
+  const steps = capability.steps ?? [];
+  const index = steps.findIndex((step) => getSelection(configuration, step.target).length === 0);
+
+  return {
+    index: index === -1 ? steps.length : index,
+    step: index === -1 ? undefined : steps[index],
+    isLast: index === steps.length - 1,
+    total: steps.length,
+  };
+}
+
+/** A slot filled only with options that give the product nothing is the same as an empty slot. */
+export function selectionIsInert(
+  catalogue: ProductCatalogue,
+  configuration: ProductConfiguration,
+  component: "tools" | "boundaries",
+): boolean {
+  const selected = getSelection(configuration, component);
+
+  if (selected.length === 0) {
+    return false;
+  }
+
+  return selected.every((optionId) => {
+    const option = getOption(catalogue, component, optionId, configuration);
+    const carried = component === "tools" ? option?.provides : option?.mitigates;
+
+    return (carried ?? []).length === 0;
+  });
 }
 
 export function requireProduct(chapter: Chapter): ProductCatalogue {

@@ -12,7 +12,7 @@ test("Chapter 01 builds a product, runs it, rebuilds it and launches", async ({ 
   await answerOpening(page, "С проблемы человека");
 
   // The answer comes back in ZERO's own line before the build starts.
-  await expectScene(page, "«проблема человека» — запомнил. Посмотрим.");
+  await expectScene(page, "«проблема человека». Записал, спорить не буду.");
 
   await pickOne(page, "Час в день уходит на сбор информации");
   await pickOne(page, "Ответ собирается в одном месте");
@@ -74,10 +74,64 @@ test("going over the context budget is allowed and says so", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Столько контекста" })).toBeEnabled();
 });
 
+test("ZERO reacts to an overloaded budget, and the humour control changes how loudly", async ({ page }) => {
+  await resetGame(page);
+  await answerOpening(page, "Пока не знаю");
+  await pickOne(page, "Час в день уходит на сбор информации");
+  await pickOne(page, "Ответ собирается в одном месте");
+  await pickOne(page, "находить сведения");
+
+  await expect(page.locator(".zero-line")).toContainText("Контекст — это не");
+
+  await page.locator(".product-option").filter({ hasText: "всё сразу" }).first().click();
+  await expect(page.locator(".zero-line")).toContainText("А архив за 2007 год?");
+
+  await page.getByRole("button", { name: /Юмор ZERO/ }).click();
+  await expect(page.locator(".zero-line")).toContainText("«Магнит»");
+
+  await page.getByRole("button", { name: /Юмор ZERO/ }).click();
+  await expect(page.locator(".zero-line")).toContainText("Контекста больше, чем продукт успевает разобрать.");
+
+  // Two things at once after a reload: the humour setting survived, because ZERO is still on its
+  // quiet line, and the unconfirmed ticks did not, because the overflow it was reacting to is
+  // gone. A preference persists; a half-made choice does not.
+  await page.reload();
+  await expect(page.locator(".zero-line")).toContainText("Выбери, что продукт видит.");
+  await expect(page.getByRole("button", { name: /Юмор ZERO/ })).toContainText("ТИХО");
+  await expect(page.locator(".product-budget")).toContainText("бюджет контекста: 0 / 4");
+});
+
+test("ZERO keeps out of the way wherever it stands", async ({ page }) => {
+  await resetGame(page);
+  await answerOpening(page, "С проблемы человека");
+  await pickOne(page, "Час в день уходит на сбор информации");
+  await pickOne(page, "Ответ собирается в одном месте");
+
+  // side-left, while the build asks its questions.
+  await expect(page.locator(".zero-sprite")).toHaveAttribute("data-position", "side-left");
+  await assertViewportIntegrity(page);
+
+  await pickOne(page, "выполнять действие");
+  await pickMany(page, ["запрос пользователя", "внутренние документы"], "Столько контекста");
+  await pickMany(page, ["отправка сообщения"], "Такие инструменты");
+  await pickMany(page, ["ничего не ограничивать"], "Собрать продукт");
+
+  // side-right, commenting on a product that acted without being asked.
+  await expect(page.locator(".zero-sprite")).toHaveAttribute("data-position", "side-right");
+  await expect(page.locator(".zero-line")).toContainText("Никто не просил");
+  await assertViewportIntegrity(page);
+
+  // The whole suite runs with reduced motion, and this reaction's gesture is a double-take. Under
+  // reduced motion it must read as a fade, not as ZERO travelling across the screen.
+  await expect(page.locator(".zero-sprite")).toHaveAttribute("data-gesture", "double-take");
+  const transform = await page.locator(".zero-sprite").evaluate((element) => getComputedStyle(element).transform);
+  expect(["none", "matrix(1, 0, 0, 1, 0, 0)"]).toContain(transform);
+});
+
 test("Chapter 01 supports keyboard selection, confirmation, and back navigation", async ({ page }) => {
   await resetGame(page);
 
-  await advanceAnyInput(page, "С чего начинается хороший продукт?");
+  await openBelief(page);
 
   // No answer may be pre-highlighted: a scene must not point at one before the player aims.
   for (const label of ["С сильной идеи", "С новой технологии", "С проблемы человека", "Пока не знаю"]) {
@@ -91,7 +145,7 @@ test("Chapter 01 supports keyboard selection, confirmation, and back navigation"
   await expect(choice(page, "С новой технологии")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "«новая технология» — запомнил. Посмотрим.");
+  await expectScene(page, "«новая технология». Записал, спорить не буду.");
 
   await page.keyboard.press("Escape");
   await expectScene(page, "С чего начинается хороший продукт?");
@@ -151,8 +205,15 @@ async function resetGame(page: Page) {
   await page.waitForTimeout(320);
 }
 
-async function answerOpening(page: Page, label: string) {
+/** Boot, ZERO arriving, ZERO introducing itself, and the belief question it opens with. */
+async function openBelief(page: Page) {
+  await advanceUntil(page, page.getByText("Ну наконец-то.", { exact: true }));
+  await choose(page, "Я здесь");
   await advanceAnyInput(page, "С чего начинается хороший продукт?");
+}
+
+async function answerOpening(page: Page, label: string) {
+  await openBelief(page);
   await choose(page, label);
 }
 
@@ -160,6 +221,7 @@ async function answerOpening(page: Page, label: string) {
 async function pickOne(page: Page, label: string) {
   await page.locator(".product-option").filter({ hasText: label }).first().click();
   await page.locator(".product-confirm").first().click();
+  await parkPointer(page);
   await page.waitForTimeout(200);
 }
 
@@ -169,6 +231,7 @@ async function pickMany(page: Page, labels: string[], confirmLabel: string) {
   }
 
   await page.getByRole("button", { name: confirmLabel }).click();
+  await parkPointer(page);
   await page.waitForTimeout(200);
 }
 
@@ -180,11 +243,13 @@ async function changeComponent(page: Page, componentLabel: string, labels: strin
   }
 
   await page.getByRole("button", { name: "Применить изменение" }).click();
+  await parkPointer(page);
   await page.waitForTimeout(200);
 }
 
 async function click(page: Page, label: string) {
   await page.getByRole("button", { name: label }).click();
+  await parkPointer(page);
   await page.waitForTimeout(200);
 }
 
@@ -192,7 +257,16 @@ async function choose(page: Page, label: string) {
   const button = choice(page, label);
   await expect(button).toBeVisible();
   await button.click();
+  await parkPointer(page);
   await page.waitForTimeout(760);
+}
+
+/**
+ * The pointer stays where it clicked, so the next scene can put a button under it and highlight
+ * it by hover alone. Parking the cursor keeps "nothing is aimed at yet" true between scenes.
+ */
+async function parkPointer(page: Page) {
+  await page.mouse.move(2, 2);
 }
 
 async function advanceAnyInput(page: Page, expectedText: string) {

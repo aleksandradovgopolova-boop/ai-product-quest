@@ -10,6 +10,7 @@ import type {
   ProductCatalogue,
   Scene,
   Season,
+  ZeroReactionCatalogue,
 } from "@/src/domain/campaign/types";
 
 type RawPlatform = {
@@ -103,6 +104,10 @@ export function loadChapter(chapterId: string): Chapter {
   const product = chapter.mechanics.includes("build")
     ? readYaml<ProductCatalogue>(`chapters/${chapterId}/product.yml`, "product.schema.json")
     : undefined;
+  // ZERO's lines live next to the chapter they belong to. No component carries chapter copy.
+  const zero = chapter.mechanics.includes("zero-pet")
+    ? readYaml<ZeroReactionCatalogue>(`chapters/${chapterId}/zero.yml`, "zero.schema.json")
+    : undefined;
 
   if (!sceneById[chapter.initialSceneId]) {
     throw new Error(`Chapter ${chapter.id} points to missing initial scene: ${chapter.initialSceneId}`);
@@ -136,12 +141,37 @@ export function loadChapter(chapterId: string): Chapter {
     assertProductReferences(chapter.id, product);
   }
 
+  if (zero) {
+    assertZeroReactions(chapter.id, zero);
+  }
+
   return {
     ...chapter,
     scenes,
     sceneById,
     product,
+    zero,
   };
+}
+
+/**
+ * ZERO must always have something to be. `chapter.opening` is the fallback the selector falls
+ * back to when no sharper trigger is live, so a catalogue without it would leave the sprite blank.
+ */
+function assertZeroReactions(chapterId: string, zero: ZeroReactionCatalogue) {
+  const seen = new Set<string>();
+
+  for (const reaction of zero.reactions) {
+    if (seen.has(reaction.id)) {
+      throw new Error(`Chapter ${chapterId} declares ZERO reaction ${reaction.id} twice`);
+    }
+
+    seen.add(reaction.id);
+  }
+
+  if (!zero.reactions.some((reaction) => reaction.trigger === "chapter.opening")) {
+    throw new Error(`Chapter ${chapterId} has no ZERO reaction for chapter.opening to fall back to`);
+  }
 }
 
 /**

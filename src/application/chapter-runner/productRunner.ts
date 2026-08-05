@@ -1,7 +1,9 @@
 import { createEvent } from "@/src/application/chapter-runner/chapterRunner";
 import { generateArtifactRecord } from "@/src/engines/artifact/artifactEngine";
 import { projectCampaign } from "@/src/engines/projection/projectCampaign";
-import { countBudget, getSelection, requireProduct } from "@/src/engines/product/productBuilder";
+import { countBudget, currentBuildStep, requireProduct } from "@/src/engines/product/productBuilder";
+
+export { currentBuildStep };
 import { getChapter, getScene } from "@/src/domain/campaign/lookup";
 import type {
   CampaignState,
@@ -9,9 +11,7 @@ import type {
   GameEvent,
   PlatformContent,
   ProductComponentKind,
-  ProductConfiguration,
   Scene,
-  SceneCapability,
 } from "@/src/domain/campaign/types";
 
 /** Which event records a confirmed slot. One name per slot, so the log reads as a build order. */
@@ -25,22 +25,6 @@ const confirmEventByComponent: Record<ProductComponentKind, EventType> = {
 };
 
 const singleSelectComponents: ProductComponentKind[] = ["problem", "outcome", "modelRole"];
-
-/**
- * Which question the build scene is on. Derived from what the product already has rather than
- * stored, so reloading mid-build lands the player back where they were.
- */
-export function currentBuildStep(capability: SceneCapability, configuration: ProductConfiguration) {
-  const steps = capability.steps ?? [];
-  const index = steps.findIndex((step) => getSelection(configuration, step.target).length === 0);
-
-  return {
-    index: index === -1 ? steps.length : index,
-    step: index === -1 ? undefined : steps[index],
-    isLast: index === steps.length - 1,
-    total: steps.length,
-  };
-}
 
 /**
  * Records one question of the build. Single-select slots carry `optionId`, multi-select slots

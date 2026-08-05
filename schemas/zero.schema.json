@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ZeroReactionCatalogue",
+  "type": "object",
+  "required": ["defaultHumor", "reactions"],
+  "additionalProperties": false,
+  "$defs": {
+    "humor": { "enum": ["minimal", "normal", "maximum"] },
+    "sprite": {
+      "description": "One of the nine rows of the sheet. Expression beyond these comes from gesture.",
+      "enum": ["idle", "speaking", "waiting", "thinking", "right", "wrong", "decision", "codex", "closed"]
+    },
+    "gesture": {
+      "enum": ["still", "lean-in", "recoil", "nod", "shake", "double-take", "bounce", "drift", "slump"]
+    },
+    "position": {
+      "description": "Places that stay clear of the copy, the actions and the readout.",
+      "enum": ["bottom-left", "bottom-right", "side-left", "side-right", "center-edge"]
+    },
+    "trigger": {
+      "description": "Conditions the runtime derives from the projection, never from an option id.",
+      "enum": [
+        "system.processing",
+        "chapter.opening",
+        "chapter.complete",
+        "build.problem",
+        "build.outcome",
+        "build.modelRole",
+        "build.context",
+        "build.tools",
+        "build.boundaries",
+        "context.overflow",
+        "boundaries.none",
+        "tools.none",
+        "run.unbounded",
+        "run.all-served",
+        "run.mixed",
+        "rebuild.open",
+        "rebuild.spent",
+        "scene.waiting"
+      ]
+    }
+  },
+  "properties": {
+    "defaultHumor": { "$ref": "#/$defs/humor" },
+    "reactions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "trigger", "priority", "sprite", "gesture", "position", "lines"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "trigger": { "$ref": "#/$defs/trigger" },
+          "priority": { "type": "integer", "minimum": 0 },
+          "sprite": { "$ref": "#/$defs/sprite" },
+          "gesture": { "$ref": "#/$defs/gesture" },
+          "position": { "$ref": "#/$defs/position" },
+          "lines": {
+            "type": "object",
+            "required": ["minimal"],
+            "additionalProperties": false,
+            "properties": {
+              "minimal": { "type": "string", "minLength": 1 },
+              "normal": { "type": "string", "minLength": 1 },
+              "maximum": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

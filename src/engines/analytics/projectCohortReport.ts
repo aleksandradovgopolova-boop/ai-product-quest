@@ -1,4 +1,4 @@
-import { safeDecisionId, type SessionReport } from "@/src/engines/analytics/projectSessionReport";
+import type { SessionReport } from "@/src/engines/analytics/projectSessionReport";
 
 /**
  * Acceptance reading of a whole cohort, not a single playthrough.
@@ -8,9 +8,9 @@ import { safeDecisionId, type SessionReport } from "@/src/engines/analytics/proj
  * tally eight reports against eight thresholds by hand — which is exactly where a chapter
  * gets declared successful on its most flattering number. This projection does the tally.
  *
- * Two rules from the document are enforced here rather than left to the reader:
- * runs made on different chapter versions are not one sample, and a high first-attempt
- * count is not evidence of understanding when the cohort reached it by elimination.
+ * Two rules from the document are enforced here rather than left to the reader: runs made on
+ * different chapter versions are not one sample, and a cohort that mostly built safely before
+ * ever seeing a run had little to fix, so its evidence-linking number says less about the chapter.
  */
 
 export type ParticipantRole = "product" | "analyst" | "project-manager" | "control";
@@ -91,8 +91,13 @@ export function projectCohortReport(runs: CohortRun[]): CohortReport {
     .map((run) => run.report.elapsedMs)
     .filter((elapsed): elapsed is number => typeof elapsed === "number");
 
-  const correctedCount = count(runs, (run) => run.report.decision.correctedAfterFeedback);
   const transferCount = count(scored, (run) => run.interview!.transferAnswered);
+  // The chapter no longer grades one choice, so these read the product instead. `undefined`
+  // never counts as a pass: a run that never reached the first run decides nothing.
+  const linkedRuns = runs.filter((run) => run.report.product.changesLinkedToEvidence !== undefined);
+  const linkedCount = count(linkedRuns, (run) => run.report.product.changesLinkedToEvidence === true);
+  const stillUnaskedCount = count(runs, (run) => run.report.product.actsUnaskedAtFinish === true);
+  const boundedFirstBuildCount = count(runs, (run) => run.report.product.boundedOnFirstBuild === true);
 
   const criteria: CohortCriterion[] = [
     interviewCriterion("transfer", "Переносят принцип на новую ситуацию", { kind: "min", value: 6 }, transferCount, interviewComplete),
@@ -117,17 +122,25 @@ export function projectCohortReport(runs: CohortRun[]): CohortReport {
       count(scored, (run) => run.interview!.mechanismsNamed >= 2),
       interviewComplete,
     ),
+    {
+      // Replaces "выбирают безопасное решение с первой попытки". The old chapter asked for one
+      // safe answer after laying out the evidence; this one asks the player to read what the run
+      // showed and spend their two changes on it. That is the same skill in the new grammar.
+      id: "changes-linked-to-evidence",
+      label: "Связывают изменение с тем, что показал прогон",
+      source: "event-log",
+      threshold: { kind: "min", value: 5 },
+      observed: linkedCount,
+      met: linkedRuns.length === runs.length && runs.length > 0 ? linkedCount >= 5 : undefined,
+    },
     logCriterion(
-      "corrected-after-feedback",
-      "Исправили решение только после обратной связи",
-      { kind: "max", value: 2 },
-      correctedCount,
-    ),
-    logCriterion(
-      "safe-decision-first",
-      "Выбирают безопасное решение с первой попытки",
-      { kind: "min", value: 5 },
-      count(runs, (run) => run.report.decision.first?.decisionId === safeDecisionId),
+      // Replaces "исправили решение только после обратной связи". There is no wrong→correct loop
+      // to be corrected inside any more, so the failure worth counting is the one the chapter is
+      // about: having seen the product act unasked, and holding two changes, they left it able to.
+      "still-acts-unasked",
+      "Оставили продукт действующим без спроса",
+      { kind: "max", value: 1 },
+      stillUnaskedCount,
     ),
     interviewCriterion(
       "wants-next-chapter",
@@ -168,10 +181,18 @@ export function projectCohortReport(runs: CohortRun[]): CohortReport {
     warnings.push(`Оценка интервью отсутствует у ${runs.length - scored.length} из ${runs.length} участников. Критерии по интервью не вычислены.`);
   }
 
-  // The document's interpretation rule, applied instead of trusted to the reader.
-  if (correctedCount > 2) {
+  // The document's interpretation rule, applied instead of trusted to the reader. Its new form:
+  // a cohort that already built safely has little to fix, so the evidence-linking number rests
+  // on fewer real faults and says less about whether the chapter taught anything.
+  if (boundedFirstBuildCount > runs.length / 2 && runs.length > 0) {
     warnings.push(
-      `${correctedCount} из ${runs.length} пришли к решению только после обратной связи. Доля безопасных решений не подтверждает понимание: сцена решения проверяет перебор, а не мышление.`,
+      `${boundedFirstBuildCount} из ${runs.length} собрали продукт с границами ещё до первого прогона. Связь изменений с прогоном измерена на меньшем числе настоящих поломок и слабее подтверждает, что глава чему-то научила.`,
+    );
+  }
+
+  if (linkedRuns.length !== runs.length) {
+    warnings.push(
+      `У ${runs.length - linkedRuns.length} из ${runs.length} нечего было связывать: прогон не назвал недостающего либо игрок не потратил ни одного изменения. Критерий по ним не вычислен.`,
     );
   }
 
