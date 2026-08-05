@@ -3,6 +3,7 @@ import type {
   CampaignState,
   Chapter,
   Evidence,
+  HumorLevel,
   PlatformContent,
   ProductComponentKind,
   ProductOption,
@@ -10,6 +11,7 @@ import type {
   SceneCapabilityStep,
   SceneChoice,
 } from "@/src/domain/campaign/types";
+import type { ZeroPresentation } from "@/src/engines/zero/selectZeroReaction";
 import { BuildStep, MetricsReadout, RebuildPanel, TestResults } from "@/src/features/chapter-01/view/ProductPanels";
 import { interpolateLines } from "@/src/application/chapter-runner/chapterRunner";
 import { cn } from "@/src/lib/utils";
@@ -32,6 +34,12 @@ import {
  * the scene and the projection; the view only draws it, so a new capability never reaches into
  * the engine from here.
  */
+const humorLabels: Record<HumorLevel, string> = {
+  minimal: "ТИХО",
+  normal: "КАК ЕСТЬ",
+  maximum: "ГРОМКО",
+};
+
 export type ProductPanel =
   | {
       kind: "build";
@@ -72,14 +80,17 @@ export function Chapter01View({
   chapter,
   codexVisible,
   content,
+  humor,
   isProcessing,
   onAdvance,
+  onCycleHumor,
   onChoice,
   onCloseCodex,
   onFocusChoice,
   productPanel,
   shouldReduceMotion,
   systemMessage,
+  zero,
 }: {
   activeChoiceIndex: number;
   canGoBack: boolean;
@@ -88,14 +99,17 @@ export function Chapter01View({
   chapter: Chapter;
   codexVisible: boolean;
   content: PlatformContent;
+  humor: HumorLevel;
   isProcessing: boolean;
   onAdvance: () => void;
+  onCycleHumor: () => void;
   onChoice: (choice: SceneChoice) => void;
   onCloseCodex: () => void;
   onFocusChoice: (index: number) => void;
   productPanel?: ProductPanel;
   shouldReduceMotion: boolean;
   systemMessage?: string;
+  zero?: ZeroPresentation;
 }) {
   const scene = chapter.sceneById[campaign.currentSceneId];
   const lines = scene ? interpolateLines(scene.lines, campaign.variables) : [];
@@ -127,9 +141,14 @@ export function Chapter01View({
         {!isBare ? <SystemMessage text={systemMessage} /> : null}
         {!isBare ? (
           <ZeroSprite
-            key={scene.id}
+            gesture={zero?.reaction.gesture ?? "still"}
+            key={`${scene.id}:${zero?.reaction.id ?? "default"}`}
+            line={zero?.line}
+            position={zero?.reaction.position ?? "bottom-left"}
+            shouldReduceMotion={shouldReduceMotion}
             speakingMs={speakingDurationMs({ lineCount: lines.length, lineDelayMs: lineDelay * 1000 })}
-            state={selectZeroState({ scene, isProcessing })}
+            // A chapter without a reaction catalogue still gets a body, read from the scene alone.
+            state={zero?.reaction.sprite ?? selectZeroState({ scene, isProcessing })}
           />
         ) : null}
 
@@ -187,10 +206,24 @@ export function Chapter01View({
           </motion.section>
         </AnimatePresence>
 
-        {!isBare && campaign.unlockedCodexEntryIds.length > 0 ? (
-          <button className="flow-command" onClick={onCloseCodex} type="button">
-            TAB / C / CODEX
-          </button>
+        {!isBare ? (
+          <div className="flow-commands">
+            {campaign.unlockedCodexEntryIds.length > 0 ? (
+              <button className="flow-command" onClick={onCloseCodex} type="button">
+                TAB / C / CODEX
+              </button>
+            ) : null}
+            {chapter.zero ? (
+              <button
+                aria-label={`Юмор ZERO: ${humorLabels[humor]}. Переключить`}
+                className="flow-command flow-command-humor"
+                onClick={onCycleHumor}
+                type="button"
+              >
+                ЮМОР / {humorLabels[humor]}
+              </button>
+            ) : null}
+          </div>
         ) : null}
 
         {!isBare ? <HotkeyHint canGoBack={canGoBack} choiceCount={choices.length} codexUnlocked={campaign.unlockedCodexEntryIds.length > 0} /> : null}

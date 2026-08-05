@@ -19,8 +19,10 @@ import {
   rebuildableComponents,
 } from "@/src/engines/product/productBuilder";
 import { describeSelection } from "@/src/engines/projection/projectProduct";
+import { selectZeroReaction } from "@/src/engines/zero/selectZeroReaction";
+import { loadHumor, nextHumor, saveHumor } from "@/src/application/settings/humorSettings";
 import { getChapter } from "@/src/domain/campaign/lookup";
-import type { CampaignState, PlatformContent, ProductComponentKind, SceneChoice } from "@/src/domain/campaign/types";
+import type { CampaignState, HumorLevel, PlatformContent, ProductComponentKind, SceneChoice } from "@/src/domain/campaign/types";
 import { useChapterKeyboard } from "@/src/features/chapter-01/keyboard";
 import { playInterfaceTone } from "@/src/features/chapter-01/sound";
 import { Chapter01View, type ProductPanel } from "@/src/features/chapter-01/view/Chapter01View";
@@ -41,6 +43,7 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
   // writes to the Event Log, so an abandoned half-selection leaves no trace.
   const [pendingSelection, setPendingSelection] = useState<string[]>([]);
   const [openComponent, setOpenComponent] = useState<ProductComponentKind | undefined>(undefined);
+  const [humor, setHumor] = useState<HumorLevel>(chapter.zero?.defaultHumor ?? "normal");
   const processingTimerRef = useRef<number | undefined>(undefined);
   const messageTimerRef = useRef<number | undefined>(undefined);
   const prefersReducedMotion = Boolean(useReducedMotion());
@@ -55,11 +58,22 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setCampaign(loadCampaignProjection(content, window.localStorage));
+      setHumor(loadHumor(window.localStorage, chapter.zero?.defaultHumor ?? "normal"));
       setHydrated(true);
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [content]);
+  }, [chapter.zero?.defaultHumor, content]);
+
+  const cycleHumor = useCallback(() => {
+    playInterfaceTone("move");
+    setHumor((current) => {
+      const next = nextHumor(current);
+      saveHumor(window.localStorage, next);
+
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!hydrated) {
@@ -315,6 +329,17 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
     return undefined;
   }, [buildStep?.step, campaign.product, capability, catalogue, content, openComponent, pendingSelection, toggleOption]);
 
+  const zero = useMemo(() => {
+    // What the player is holding but has not committed. ZERO comments on it, because the moment
+    // the budget goes over is the moment the remark is worth anything.
+    const target = buildStep?.step?.target ?? (capability?.kind === "rebuild" ? openComponent : undefined);
+    const draft = target && pendingSelection.length > 0
+      ? { component: target, optionIds: pendingSelection, budget: buildStep?.step?.budget }
+      : undefined;
+
+    return selectZeroReaction({ chapter, scene, product: campaign.product, isProcessing, humor, draft });
+  }, [buildStep?.step, campaign.product, capability?.kind, chapter, humor, isProcessing, openComponent, pendingSelection, scene]);
+
   useChapterKeyboard({
     activeChoiceIndex,
     canAdvanceWithAnyInput,
@@ -343,9 +368,12 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
       onChoice={choose}
       onCloseCodex={openCodex}
       onFocusChoice={(index) => setActiveChoice({ index, sceneId: campaign.currentSceneId })}
+      humor={humor}
+      onCycleHumor={cycleHumor}
       productPanel={productPanel}
       shouldReduceMotion={shouldReduceMotion}
       systemMessage={systemMessage}
+      zero={zero}
     />
   );
 }

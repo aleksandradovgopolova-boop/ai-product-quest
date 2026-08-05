@@ -24,6 +24,84 @@ export type ScenePresentation = "terminal" | "dialogue" | "title";
 export type SceneAdvanceMode = "any-input";
 export type ChoiceAction = "artifacts" | "codex" | "reset";
 
+/**
+ * What ZERO's body can say. Nine states, because the sprite sheet has nine rows and staying at
+ * nine keeps it compatible with the atlas geometry it was drawn against. Expression beyond these
+ * comes from gesture and position, not from more rows.
+ */
+export type ZeroState =
+  | "idle"
+  | "speaking"
+  | "waiting"
+  | "thinking"
+  | "right"
+  | "wrong"
+  | "decision"
+  | "codex"
+  | "closed";
+
+/**
+ * A motion treatment laid over the sprite. This is the other half of ZERO's vocabulary: the same
+ * nine drawings read as amusement, scepticism or a facepalm depending on how they move.
+ */
+export type ZeroGesture =
+  | "still"
+  | "lean-in"
+  | "recoil"
+  | "nod"
+  | "shake"
+  | "double-take"
+  | "bounce"
+  | "drift"
+  | "slump";
+
+/** Where ZERO may stand. Nothing else is a legal position: these are the places that stay clear
+ * of the copy, the actions and the readout. */
+export type ZeroPosition = "bottom-left" | "bottom-right" | "side-left" | "side-right" | "center-edge";
+
+export type HumorLevel = "minimal" | "normal" | "maximum";
+
+/**
+ * A condition the runtime can recognise on its own. Every trigger is derived from the projection
+ * rather than from an option id, so content can rename an option without silencing ZERO.
+ */
+export type ZeroTrigger =
+  | "system.processing"
+  | "chapter.opening"
+  | "chapter.complete"
+  | "build.problem"
+  | "build.outcome"
+  | "build.modelRole"
+  | "build.context"
+  | "build.tools"
+  | "build.boundaries"
+  | "context.overflow"
+  | "boundaries.none"
+  | "tools.none"
+  | "run.unbounded"
+  | "run.all-served"
+  | "run.mixed"
+  | "rebuild.open"
+  | "rebuild.spent"
+  | "scene.waiting";
+
+export type ZeroReaction = {
+  id: string;
+  trigger: ZeroTrigger;
+  /** Higher wins when several triggers are live at once. */
+  priority: number;
+  sprite: ZeroState;
+  gesture: ZeroGesture;
+  position: ZeroPosition;
+  /** One line per humour level. `minimal` is the only one that must be there. */
+  lines: Partial<Record<HumorLevel, string>> & { minimal: string };
+};
+
+export type ZeroReactionCatalogue = {
+  defaultHumor: HumorLevel;
+  reactions: ZeroReaction[];
+};
+
 export type Evidence = {
   id: string;
   title: string;
@@ -196,6 +274,8 @@ export type Chapter = {
   sceneById: Record<string, Scene>;
   /** Present only for chapters that build a product. */
   product?: ProductCatalogue;
+  /** Present only for chapters where ZERO is on screen. */
+  zero?: ZeroReactionCatalogue;
 };
 
 export type Season = {

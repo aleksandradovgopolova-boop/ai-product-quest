@@ -1,20 +1,12 @@
-import type { Scene } from "@/src/domain/campaign/types";
+import type { Scene, ZeroState } from "@/src/domain/campaign/types";
 
 /**
- * ZERO has a body. The body is not decoration: every state below is read from something the
- * runtime already knows, so the sprite says what the system is doing at that moment. Nothing
- * here is authored in YAML — adding a scene never means picking a pose by hand.
+ * ZERO has a body. The body is not decoration: the state below is read from something the
+ * runtime already knows, so the sprite says what the system is doing at that moment. The state
+ * vocabulary itself lives in the domain — the reaction engine speaks it too, and an engine may
+ * not import a feature.
  */
-export type ZeroState =
-  | "idle"
-  | "speaking"
-  | "waiting"
-  | "thinking"
-  | "right"
-  | "wrong"
-  | "decision"
-  | "codex"
-  | "closed";
+export type { ZeroState };
 
 export type ZeroSpriteState = {
   id: ZeroState;

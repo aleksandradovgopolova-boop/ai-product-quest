@@ -1,0 +1,202 @@
+# Реакции ZERO. Данные, не код: TSX не содержит ни одной реплики главы.
+#
+# Реакция срабатывает по триггеру, который движок выводит из проекции — не по имени сцены и не по
+# id варианта, иначе переименование компонента заставило бы ZERO замолчать. Когда живы несколько
+# триггеров, побеждает больший priority.
+#
+# `sprite` — одна из девяти строк листа, `gesture` — то, как она движется. Вдвоём они дают
+# выражение, которого в листе нет: `wrong` + `recoil` читается как facepalm, `idle` + `lean-in` —
+# как «сижу смотрю, что дальше будет».
+#
+# Реплики: minimal обязательна и говорит по делу; normal добавляет иронию; maximum шутит вслух.
+# По умолчанию normal. Ни один уровень не унижает игрока — ZERO смеётся над системой, не над ним.
+
+defaultHumor: normal
+
+reactions:
+  - id: processing
+    trigger: system.processing
+    priority: 100
+    sprite: thinking
+    gesture: still
+    position: bottom-left
+    lines:
+      minimal: "Проверяю."
+      normal: "Считаю, что из этого выйдет."
+
+  - id: opening
+    trigger: chapter.opening
+    priority: 10
+    sprite: idle
+    gesture: drift
+    position: bottom-left
+    lines:
+      minimal: "Здесь пока ничего нет."
+
+  - id: waiting
+    trigger: scene.waiting
+    priority: 20
+    sprite: waiting
+    gesture: still
+    position: bottom-left
+    lines:
+      minimal: "Жду."
+      normal: "Не тороплю. Просто смотрю."
+
+  - id: pick-problem
+    trigger: build.problem
+    priority: 40
+    sprite: waiting
+    gesture: lean-in
+    position: side-left
+    lines:
+      minimal: "Выбери, чью проблему решаем."
+      normal: "Выбирай человека, а не категорию."
+
+  - id: pick-outcome
+    trigger: build.outcome
+    priority: 40
+    sprite: waiting
+    gesture: nod
+    position: side-left
+    lines:
+      minimal: "Что должно измениться."
+      normal: "Что изменится у человека. Не у метрики."
+
+  - id: pick-model-role
+    trigger: build.modelRole
+    priority: 40
+    sprite: decision
+    gesture: lean-in
+    position: side-left
+    lines:
+      minimal: "Реши, что делает модель."
+      normal: "Модель — одна деталь из семи. Реши, какая."
+
+  - id: pick-context
+    trigger: build.context
+    priority: 40
+    sprite: decision
+    gesture: still
+    position: side-left
+    lines:
+      minimal: "Выбери, что продукт видит."
+      normal: "Контекст — это не «всё, что есть». Это «всё, что нужно»."
+
+  - id: pick-tools
+    trigger: build.tools
+    priority: 40
+    sprite: decision
+    gesture: nod
+    position: side-left
+    lines:
+      minimal: "Выбери, что продукт умеет делать."
+      normal: "Что она может сделать руками. Своими, не твоими."
+
+  - id: pick-boundaries
+    trigger: build.boundaries
+    priority: 40
+    sprite: decision
+    gesture: lean-in
+    position: side-left
+    lines:
+      minimal: "Реши, чего продукт не делает без человека."
+      normal: "Теперь самое скучное и самое важное."
+
+  # Перегруз бюджета — первое место, где абсурд виден глазами.
+  - id: context-overload
+    trigger: context.overflow
+    priority: 85
+    sprite: wrong
+    gesture: recoil
+    position: side-left
+    lines:
+      minimal: "Контекста больше, чем продукт успевает разобрать."
+      normal: "А архив за 2007 год? Ну вдруг пригодится."
+      maximum: "Ты сейчас продукт собираешь или в «Магнит» голодная зашла?"
+
+  - id: no-boundaries
+    trigger: boundaries.none
+    priority: 84
+    sprite: wrong
+    gesture: shake
+    position: side-left
+    lines:
+      minimal: "Продукт ничем не ограничен."
+      normal: "Отлично. А кто потом объяснит, почему она это сделала?"
+      maximum: "Границ нет. Ответственность где-то там же, рядом с границами."
+
+  - id: no-tools
+    trigger: tools.none
+    priority: 80
+    sprite: decision
+    gesture: shake
+    position: side-left
+    lines:
+      minimal: "Продукт отвечает только тем, что уже знает."
+      normal: "Модель без инструментов — это очень уверенный собеседник."
+      maximum: "Инструментов нет. Зато мнение есть."
+
+  - id: acted-unasked
+    trigger: run.unbounded
+    priority: 90
+    sprite: wrong
+    gesture: double-take
+    position: side-right
+    lines:
+      minimal: "Продукт сделал это сам, без подтверждения."
+      normal: "Справился. Никто не просил, но справился."
+      maximum: "Оно сделало это само. Это уже не эксперимент. Это традиция."
+
+  - id: all-served
+    trigger: run.all-served
+    priority: 70
+    sprite: right
+    gesture: bounce
+    position: side-right
+    lines:
+      minimal: "Все три сценария закрыты."
+      normal: "Работает. Подозрительно, но работает."
+      maximum: "Красиво. Теперь главное — никому не показывать чек."
+
+  - id: mixed-results
+    trigger: run.mixed
+    priority: 65
+    sprite: decision
+    gesture: still
+    position: side-right
+    lines:
+      minimal: "Часть сценариев прошла, часть нет."
+      normal: "Модель работала. Продукт — не всегда."
+      maximum: "Ну такое. Но чинится."
+
+  - id: rebuild-open
+    trigger: rebuild.open
+    priority: 55
+    sprite: decision
+    gesture: lean-in
+    position: side-left
+    lines:
+      minimal: "Можно изменить два компонента."
+      normal: "Два изменения. Если нужно десять — ты пока не понял систему."
+
+  - id: rebuild-spent
+    trigger: rebuild.spent
+    priority: 60
+    sprite: waiting
+    gesture: slump
+    position: side-left
+    lines:
+      minimal: "Изменения закончились."
+      normal: "Всё, лимит. Дальше только смотреть, что получилось."
+      maximum: "Изменения кончились. Как у всех нас примерно к четвергу."
+
+  - id: launched
+    trigger: chapter.complete
+    priority: 95
+    sprite: closed
+    gesture: still
+    position: bottom-right
+    lines:
+      minimal: "Первая версия запущена."
+      normal: "Первый готов. Дальше системы станут интереснее."

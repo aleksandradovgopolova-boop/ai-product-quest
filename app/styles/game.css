@@ -480,12 +480,34 @@
   width: 36px;
 }
 
-.flow-command {
+/* The right-hand column, bottom-anchored so it grows upward toward the status readout. */
+.flow-commands {
+  align-items: flex-end;
   bottom: clamp(42px, 4vw, 62px);
-  color: var(--accent);
-  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   position: fixed;
   right: clamp(30px, 5vw, 76px);
+}
+
+.flow-command {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0;
+}
+
+.flow-command-humor {
+  color: var(--muted);
+}
+
+.flow-command-humor:hover,
+.flow-command-humor:focus-visible {
+  color: var(--accent);
 }
 
 .system-progress {
@@ -866,20 +888,78 @@
  * Zero's body. It is HUD state, not decoration: the row of the sheet is chosen by what the
  * system is doing, and the sprite lives outside the reading column so it never moves the text.
  */
+/* ZERO stands in the strip below the scene and above the key hints. Every safe position is a
+   point in that strip: the middle band belongs to the copy and the actions, and the right-hand
+   column belongs to the status readout, so nothing here may reach into either. */
 .zero-sprite {
+  align-items: flex-start;
+  bottom: clamp(14px, 2vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  left: clamp(18px, 2.2vw, 34px);
+  max-width: min(280px, 34vw);
+  position: fixed;
+}
+
+.zero-sprite-body {
+  animation: zero-frames var(--zero-duration) steps(var(--zero-frames)) infinite;
   aspect-ratio: 192 / 208;
   background-image: var(--zero-sheet);
-  background-repeat: no-repeat;
-  background-size: calc(var(--zero-columns) * 100%) calc(var(--zero-rows) * 100%);
   background-position-x: 0%;
   background-position-y: calc(var(--zero-row) * 100% / (var(--zero-rows) - 1));
-  bottom: clamp(14px, 2vw, 22px);
+  background-repeat: no-repeat;
+  background-size: calc(var(--zero-columns) * 100%) calc(var(--zero-rows) * 100%);
   image-rendering: pixelated;
-  left: clamp(18px, 2.2vw, 34px);
   opacity: 0.95;
-  position: fixed;
   width: clamp(104px, 11vw, 144px);
-  animation: zero-frames var(--zero-duration) steps(var(--zero-frames)) infinite;
+}
+
+/* An aside, not a chat panel: one short line, and only when ZERO has something to add. */
+.zero-line {
+  border-left: 1px solid var(--line-strong);
+  color: rgba(234, 234, 234, 0.82);
+  font-size: clamp(0.72rem, 1.1vw, 0.84rem);
+  line-height: 1.42;
+  margin: 0;
+  padding-left: 10px;
+}
+
+.zero-sprite-bottom-right,
+.zero-sprite-side-right {
+  align-items: flex-end;
+  left: auto;
+  /* Clear of the status readout and the key hints, which own the right-hand column. */
+  right: clamp(150px, 18vw, 260px);
+}
+
+.zero-sprite-bottom-right .zero-line,
+.zero-sprite-side-right .zero-line {
+  border-left: 0;
+  border-right: 1px solid var(--line-strong);
+  padding-left: 0;
+  padding-right: 10px;
+  text-align: right;
+}
+
+.zero-sprite-side-left,
+.zero-sprite-side-right {
+  bottom: clamp(38px, 5vw, 62px);
+}
+
+.zero-sprite-center-edge {
+  align-items: center;
+  left: 50%;
+  right: auto;
+  translate: -50% 0;
+}
+
+.zero-sprite-center-edge .zero-line {
+  border-left: 0;
+  border-top: 1px solid var(--line-strong);
+  padding-left: 0;
+  padding-top: 8px;
+  text-align: center;
 }
 
 /* One step per used frame; a row's unused tail columns are never reached. */
@@ -894,7 +974,7 @@
 }
 
 /* A finished chapter does not fidget: that row holds a single pose. */
-.zero-sprite[data-state="closed"] {
+.zero-sprite[data-state="closed"] .zero-sprite-body {
   animation: none;
   opacity: 0.7;
 }
@@ -904,7 +984,22 @@
   .zero-sprite {
     bottom: 76px;
     left: 22px;
+    max-width: min(220px, 58vw);
+  }
+
+  .zero-sprite-body {
     width: clamp(84px, 24vw, 116px);
+  }
+
+  /* The key hints run the full width down here, so the right-hand positions only shift across. */
+  .zero-sprite-bottom-right,
+  .zero-sprite-side-right {
+    right: 22px;
+  }
+
+  .zero-sprite-side-left,
+  .zero-sprite-side-right {
+    bottom: 96px;
   }
 }
 
@@ -912,6 +1007,10 @@
   .zero-sprite {
     bottom: 72px;
     left: 18px;
+    max-width: min(200px, 62vw);
+  }
+
+  .zero-sprite-body {
     width: 88px;
   }
 }
@@ -921,6 +1020,9 @@
   .zero-sprite {
     bottom: 24px;
     left: 26px;
+  }
+
+  .zero-sprite-body {
     width: clamp(96px, 10vw, 138px);
   }
 }
@@ -1206,5 +1308,56 @@
     /* On narrow screens the status readout moves under the topbar and ends around 180px, while
        the scene centres at 45%. The scene may only be twice that gap tall. */
     max-height: calc((45dvh - 186px) * 2);
+  }
+}
+
+/* Viewport pass. A vertically centred scene and a character standing in the bottom strip cannot
+   both fit a short window, so the scene is anchored under the topbar instead of centred, and its
+   height is whatever is left above the strip ZERO and the HUD occupy. */
+.flow-scene {
+  max-height: calc(100dvh - clamp(150px, 20vh, 210px) - 230px);
+  top: clamp(150px, 20vh, 210px);
+  translate: -50% 0;
+}
+
+.flow-scene-bare {
+  max-height: none;
+  top: 50%;
+  translate: -50% -50%;
+}
+
+/* Two lines of aside at most: ZERO comments, it does not deliver a paragraph. */
+.zero-line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 26ch;
+  overflow: hidden;
+}
+
+/* The safe positions differ across the strip, never up into the scene. */
+.zero-sprite-side-left,
+.zero-sprite-side-right {
+  bottom: clamp(14px, 2vw, 22px);
+}
+
+.zero-sprite-side-left {
+  left: clamp(56px, 7vw, 120px);
+}
+
+@media (max-width: 820px) {
+  .flow-scene {
+    max-height: calc(100dvh - 180px - 270px);
+    top: 180px;
+    translate: -50% 0;
+  }
+
+  .zero-sprite-side-left,
+  .zero-sprite-side-right {
+    bottom: 76px;
+  }
+
+  .zero-sprite-side-left {
+    left: 22px;
   }
 }

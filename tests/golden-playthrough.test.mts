@@ -125,9 +125,9 @@ test("the answer the player gives comes back in ZERO's own line", () => {
   const chapter = content.chapterById["chapter-01"];
 
   assert.deepEqual(interpolateLines(chapter.sceneById["02_problem"].lines, state.variables), [
+    "«проблема человека». Записал, спорить не буду.",
     "Продукта ещё нет.",
     "Есть только люди, которым что-то мешает.",
-    "«проблема человека» — запомнил. Посмотрим.",
   ]);
 });
 
