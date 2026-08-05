@@ -1,5 +1,11 @@
 import { getChapter } from "@/src/domain/campaign/lookup";
-import type { CampaignState, GameEvent, PlatformContent } from "@/src/domain/campaign/types";
+import type {
+  CampaignState,
+  GameEvent,
+  PlatformContent,
+  ProductComponentKind,
+  ProductOutcomeBand,
+} from "@/src/domain/campaign/types";
 
 /**
  * Product-side reading of a playthrough, derived entirely from the Event Log.
@@ -8,11 +14,27 @@ import type { CampaignState, GameEvent, PlatformContent } from "@/src/domain/cam
  * playthrough needs to answer, using events the game already records. Two signals are
  * deliberately absent because nothing emits them yet — see `notInstrumented`.
  */
-export type DecisionAttempt = {
-  decisionId: string;
-  label: string;
-  effects: Record<string, number>;
-  occurredAt: string;
+
+/**
+ * What the player built and what they did with what the runs showed them.
+ *
+ * Every field that needs a run to exist is `undefined` until it does, never `false`: a player who
+ * stopped before the first run has not failed these, they have not reached them.
+ */
+export type ProductReading = {
+  reachedFirstRun: boolean;
+  reachedLaunch: boolean;
+  firstRunBands: ProductOutcomeBand[];
+  finalRunBands: ProductOutcomeBand[];
+  /** The first build, before any feedback, could not act without a human in the loop. */
+  boundedOnFirstBuild?: boolean;
+  /** After seeing it act unasked and being given two changes, it still can. */
+  actsUnaskedAtFinish?: boolean;
+  /** Components the first run named as the reason a scenario fell short. */
+  faultsNamed: ProductComponentKind[];
+  changedComponents: ProductComponentKind[];
+  /** Every change the player spent went to something the run had named. */
+  changesLinkedToEvidence?: boolean;
 };
 
 export type SessionReport = {
@@ -33,18 +55,7 @@ export type SessionReport = {
   retries: number;
   choices: Array<{ sceneId: string; choiceId: string; label: string; occurredAt: string }>;
   wrongAnswers: Array<{ sceneId: string; choiceId: string; label: string }>;
-  /**
-   * Every decision attempt in order. The chapter sends a wrong decision back to the same
-   * scene, so the final attempt is almost always the safe one among players who finish.
-   * Only `first` says whether the player got there unaided.
-   */
-  decision: {
-    first?: DecisionAttempt;
-    final?: DecisionAttempt;
-    attempts: DecisionAttempt[];
-    attemptCount: number;
-    correctedAfterFeedback: boolean;
-  };
+  product: ProductReading;
   codexUnlocked: string[];
   artifactsGenerated: string[];
   chapterCompleted: boolean;
@@ -57,13 +68,6 @@ export type SessionReport = {
  * product starts being assembled.
  */
 const buildStartSceneId = "02_problem";
-
-/**
- * The decision the retired chapter measured. The rebuilt chapter has no single safe answer —
- * it prices a configuration instead of grading one choice — so nothing emits `decision.submitted`
- * any more and every criterion built on this id reads as unsourced rather than as failed.
- */
-export const safeDecisionId = "quarantine-report";
 
 export function projectSessionReport(content: PlatformContent, state: CampaignState): SessionReport {
   const chapter = getChapter(content, state.currentChapterId);
@@ -122,19 +126,6 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
   const lastEventAt = events.at(-1)?.occurredAt;
   const buildStartedAt = firstSceneEntryAt(sceneEntries, buildStartSceneId);
 
-  // Read attempts from the log, not from state.decisions: that record is keyed by
-  // decisionId, so a retry overwrites nothing and the order of attempts is lost.
-  const attempts: DecisionAttempt[] = events
-    .filter((event) => event.type === "decision.submitted")
-    .map((event) => ({
-      decisionId: readString(event.payload.decisionId),
-      label: readString(event.payload.label),
-      effects: readEffects(event.payload.effects),
-      occurredAt: event.occurredAt,
-    }));
-  const firstAttempt = attempts[0];
-  const finalAttempt = attempts.at(-1);
-
   return {
     campaignId: state.campaignId,
     chapterId: chapter.id,
@@ -153,23 +144,53 @@ export function projectSessionReport(content: PlatformContent, state: CampaignSt
     retries,
     choices,
     wrongAnswers,
-    decision: {
-      first: firstAttempt,
-      final: finalAttempt,
-      attempts,
-      attemptCount: attempts.length,
-      correctedAfterFeedback: attempts.length > 1 && firstAttempt?.decisionId !== finalAttempt?.decisionId,
-    },
     codexUnlocked: [...state.unlockedCodexEntryIds],
     artifactsGenerated: state.artifacts.map((artifact) => artifact.id),
+    product: readProduct(state),
     // The chapter says when it is finished; the report no longer has to know a scene by name.
     chapterCompleted: events.some((event) => event.type === "chapter.completed"),
     resets: events.filter((event) => event.type === "campaign.reset_completed" || event.type === "campaign.reset").length,
     // Opening the Codex overlay and opening an artifact are UI-only today, so a session
-    // report cannot show them. `decision.*` joins them: the rebuilt chapter prices a whole
-    // configuration instead of grading one choice, so nothing emits a decision to count.
-    notInstrumented: ["codex.opened", "artifact.opened", "decision.submitted"],
+    // report cannot show them.
+    notInstrumented: ["codex.opened", "artifact.opened"],
   };
+}
+
+/**
+ * The chapter's own reading of a run. The two signals that matter are whether the player's
+ * changes went where the evidence pointed, and whether the product could still act unasked once
+ * they were out of changes.
+ */
+function readProduct(state: CampaignState): ProductReading {
+  const { firstRun, latestRun, rebuild, completed } = state.product;
+  const firstRunBands = firstRun?.results.map((result) => result.band) ?? [];
+  const finalRunBands = latestRun?.results.map((result) => result.band) ?? [];
+  const faultsNamed = unique(
+    (firstRun?.results ?? []).flatMap((result) => result.attribution.missing.map((reference) => reference.component)),
+  );
+  const changedComponents = rebuild.changes.map((change) => change.component);
+
+  return {
+    reachedFirstRun: firstRunBands.length > 0,
+    reachedLaunch: completed,
+    firstRunBands,
+    finalRunBands,
+    // Reaching a run is what makes these answerable at all.
+    boundedOnFirstBuild: firstRunBands.length > 0 ? !firstRunBands.includes("unbounded") : undefined,
+    actsUnaskedAtFinish: completed && finalRunBands.length > 0 ? finalRunBands.includes("unbounded") : undefined,
+    faultsNamed,
+    changedComponents,
+    // Undecidable when the run named nothing to fix or the player changed nothing: there is no
+    // link to make, and an absent link is not a failed one.
+    changesLinkedToEvidence:
+      faultsNamed.length > 0 && changedComponents.length > 0
+        ? changedComponents.every((component) => faultsNamed.includes(component))
+        : undefined,
+  };
+}
+
+function unique<T>(values: T[]): T[] {
+  return [...new Set(values)];
 }
 
 function firstSceneEntryAt(sceneEntries: GameEvent[], sceneId: string) {
@@ -189,18 +210,3 @@ function readString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-function readEffects(value: unknown): Record<string, number> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  const effects: Record<string, number> = {};
-
-  for (const [metric, delta] of Object.entries(value)) {
-    if (typeof delta === "number") {
-      effects[metric] = delta;
-    }
-  }
-
-  return effects;
-}
