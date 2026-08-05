@@ -140,7 +140,7 @@ function appendChoiceEvent(events: GameEvent[], campaignId: string, occurredAt: 
       variables: choice.setVariables,
       decisionId: choice.decisionId,
       effects: choice.effects ?? {},
-      systemMessage: getSystemMessage(choice, sceneId),
+      systemMessage: getSystemMessage(choice),
     }),
   );
 }
@@ -165,33 +165,21 @@ export function interpolateLines(lines: string[], variables: Record<string, stri
   return lines.map((line) => line.replaceAll(/\{\{(\w+)\}\}/g, (_match, name: string) => variables[name] ?? "..."));
 }
 
-export function getSystemMessage(choice: SceneChoice, fromSceneId: string) {
+/**
+ * What the HUD flashes back after an input. Derived from what the choice does, never from which
+ * scene it sits in: a chapter can be reordered without stranding a message here.
+ */
+export function getSystemMessage(choice: SceneChoice) {
   if (choice.unlockCodexEntryId) {
     return "Память обновлена";
   }
 
-  if (choice.nextSceneId === "context-reveal" || choice.nextSceneId === "context-plain") {
-    return "Контекст открыт";
+  if (choice.generateArtifactId) {
+    return "Blueprint собран";
   }
 
-  if (choice.nextSceneId === "origin-memory" || choice.nextSceneId === "cause-wrong") {
-    return "Память недоступна";
-  }
-
-  if (choice.nextSceneId === "missing-correct" || choice.nextSceneId === "cause-correct") {
-    return "Источник подтверждён";
-  }
-
-  if (choice.nextSceneId === "decision-correct") {
+  if (choice.decisionId) {
     return "Решение принято";
-  }
-
-  if (choice.nextSceneId === "decision-wrong") {
-    return "Ответ приостановлен";
-  }
-
-  if (fromSceneId === "decision") {
-    return "Решение получено";
   }
 
   return "Команда принята";

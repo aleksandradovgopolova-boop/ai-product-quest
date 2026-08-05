@@ -23,8 +23,17 @@ graph TD
 
   Projection["Projection Engine"] --> Simulation["Simulation Engine"]
   Projection --> Artifact["Artifact Engine"]
+  Projection --> Product["Product Engine"]
   Projection --> Domain
+  Product --> Domain
+  Artifact --> Product
 ```
+
+The Product Engine builds a product out of the Event Log and runs the chapter's scenarios against
+it. It is pure: the same configuration always yields the same readings, which is what lets a
+rebuild be shown as a before/after rather than as two separate rolls. The Projection Engine layers
+the six player-facing metrics on top of the full system state; nothing above it reads the twelve
+raw fields.
 
 ## Allowed Direction
 

@@ -16,8 +16,15 @@ export function loadCampaignState(content: PlatformContent, storage: StorageAdap
 
   if (current) {
     const parsed = parseStoredState(current);
+
     if (parsed) {
-      return projectCampaign(content, parsed.eventLog);
+      // A save can be structurally valid and still name scenes this chapter no longer has. That
+      // is not a corrupt save, it is a replaced chapter, so it migrates rather than throws.
+      const projected = tryProject(content, parsed.eventLog);
+
+      if (projected) {
+        return projected;
+      }
     }
 
     const rebuilt = migrateReplacedChapter(content, current, occurredAt);
@@ -199,6 +206,14 @@ function migrateReplacedChapter(content: PlatformContent, raw: string, occurredA
   }
 
   return projectCampaign(content, events);
+}
+
+function tryProject(content: PlatformContent, eventLog: GameEvent[]): CampaignState | undefined {
+  try {
+    return projectCampaign(content, eventLog);
+  } catch {
+    return undefined;
+  }
 }
 
 function parseStoredState(raw: string): StoredCampaignState | undefined {

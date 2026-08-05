@@ -7,20 +7,71 @@ const appStorageKeys = [
   "ai-product-quest-progress",
 ];
 
-test("Chapter 01 opens on AXIOM and records the first answer", async ({ page }) => {
+test("Chapter 01 builds a product, runs it, rebuilds it and launches", async ({ page }) => {
   await resetGame(page);
-  await completeChapterOne(page);
+  await answerOpening(page, "С проблемы человека");
 
-  await expect(page.getByText("«проблема человека».", { exact: true })).toBeVisible();
-  await assertViewportIntegrity(page);
+  // The answer comes back in ZERO's own line before the build starts.
+  await expectScene(page, "«проблема человека» — запомнил. Посмотрим.");
 
-  // The stage rail replaced the case rail; the chapter is about building, not closing a case.
-  await expect(page.locator(".system-progress")).toContainText("Создать");
-  await expect(page.locator(".system-topbar")).not.toContainText("ДЕЛО");
+  await pickOne(page, "Час в день уходит на сбор информации");
+  await pickOne(page, "Ответ собирается в одном месте");
+
+  await pickOne(page, "находить сведения");
+  await pickMany(page, ["запрос пользователя", "внутренние документы"], "Столько контекста");
+  await pickMany(page, ["чтение внутренних документов"], "Такие инструменты");
+  await pickMany(page, ["не отвечать без ссылки на источник"], "Собрать продукт");
+
+  // Three readings, each attributable, none of them a verdict.
+  await expect(page.locator(".product-result")).toHaveCount(3);
+  await expect(page.locator(".product-results")).toContainText("Обычный вторник");
+  await expect(page.locator(".product-results")).toContainText("Не хватило");
+  await expect(page.locator(".flow-scene")).not.toContainText("Правильный ответ");
+  await expect(page.locator(".flow-scene")).not.toContainText("Попробуйте ещё раз");
+
+  // Six projected metrics, never the twelve fields behind them.
+  await expect(page.locator(".product-metric")).toHaveCount(6);
+  await expect(page.locator(".product-metrics")).toContainText("Скорость");
+  await expect(page.locator(".product-metrics")).not.toContainText("технический долг");
+
+  await click(page, "Что менять");
+
+  await expect(page.locator(".product-rebuild")).toContainText("изменений: 0 / 2");
+  await changeComponent(page, "Инструменты", ["отправка сообщения"]);
+  await changeComponent(page, "Границы", ["не отправлять никому без подтверждения"]);
+  await expect(page.locator(".product-rebuild")).toContainText("изменений: 2 / 2");
+
+  // The allowance is spent: nothing offers a third change.
+  await expect(page.locator(".product-component").first()).toBeDisabled();
+
+  await click(page, "Запустить первую версию");
+
+  await expectScene(page, "А на продукт.");
+  await expect(choice(page, "Открыть Assistant Blueprint")).toBeVisible();
 
   await page.goto("/codex");
-  await expect(page.getByRole("heading", { name: "Системная память" })).toBeVisible();
-  await expect(page.locator('[aria-label="Записи Codex"]')).toContainText("закрыто");
+  await expect(page.locator('[aria-label="Записи Codex"]')).toContainText("LLM — не продукт");
+
+  await page.goto("/artifacts");
+  await expect(page.getByText("Assistant Blueprint").first()).toBeVisible();
+  await expect(page.locator("main")).toContainText("Ирина, вторая линия поддержки");
+});
+
+test("going over the context budget is allowed and says so", async ({ page }) => {
+  await resetGame(page);
+  await answerOpening(page, "Пока не знаю");
+  await pickOne(page, "Час в день уходит на сбор информации");
+  await pickOne(page, "Ответ собирается в одном месте");
+  await pickOne(page, "находить сведения");
+
+  await expect(page.locator(".product-budget")).toContainText("бюджет контекста: 0 / 4");
+
+  await page.locator(".product-option").filter({ hasText: "всё сразу" }).first().click();
+
+  await expect(page.locator(".product-budget")).toContainText("7 / 4");
+  await expect(page.locator(".product-budget")).toContainText("перегруз");
+  // Over budget is a consequence, not a wall: the step still confirms.
+  await expect(page.getByRole("button", { name: "Столько контекста" })).toBeEnabled();
 });
 
 test("Chapter 01 supports keyboard selection, confirmation, and back navigation", async ({ page }) => {
@@ -40,7 +91,7 @@ test("Chapter 01 supports keyboard selection, confirmation, and back navigation"
   await expect(choice(page, "С новой технологии")).toHaveAttribute("aria-current", "true");
 
   await page.keyboard.press("Enter");
-  await expectScene(page, "«новая технология».");
+  await expectScene(page, "«новая технология» — запомнил. Посмотрим.");
 
   await page.keyboard.press("Escape");
   await expectScene(page, "С чего начинается хороший продукт?");
@@ -48,12 +99,14 @@ test("Chapter 01 supports keyboard selection, confirmation, and back navigation"
 
 test("Chapter 01 can be replayed after reset", async ({ page }) => {
   await resetGame(page);
-  await completeChapterOne(page);
+  await answerOpening(page, "С проблемы человека");
+  await pickOne(page, "Час в день уходит на сбор информации");
 
-  await choose(page, "Начать заново");
+  await page.goto("/play/chapter-01");
+  await expect(page.locator(".product-options")).toBeVisible();
 
-  await expectScene(page, "creator: not found");
-  await expect(page.getByRole("dialog", { name: "Codex" })).toBeHidden();
+  // A half-built product survives a reload: the build is event-sourced, not held in the page.
+  await expect(page.locator(".flow-command-label")).toContainText("Что у человека должно измениться?");
 });
 
 test.describe("mobile viewport", () => {
@@ -62,12 +115,25 @@ test.describe("mobile viewport", () => {
     viewport: { width: 390, height: 844 },
   });
 
-  test("Chapter 01 stays inside one viewport without critical overlaps", async ({ page }) => {
+  test("Chapter 01 stays inside one viewport through the build and the run", async ({ page }) => {
     await resetGame(page);
     await assertViewportIntegrity(page);
 
-    await completeChapterOne(page);
-    await expectScene(page, "«проблема человека».");
+    await answerOpening(page, "С проблемы человека");
+    await assertViewportIntegrity(page);
+
+    await pickOne(page, "Час в день уходит на сбор информации");
+    await pickOne(page, "Ответ собирается в одном месте");
+    await pickOne(page, "находить сведения");
+    // The context step is the tallest of the build: six options, a budget and a confirmation.
+    await assertViewportIntegrity(page);
+
+    await pickMany(page, ["запрос пользователя", "внутренние документы"], "Столько контекста");
+    await pickMany(page, ["чтение внутренних документов"], "Такие инструменты");
+    await pickMany(page, ["не отвечать без ссылки на источник"], "Собрать продукт");
+
+    // Three readings is the tallest screen in the chapter.
+    await expect(page.locator(".product-result")).toHaveCount(3);
     await assertViewportIntegrity(page);
   });
 });
@@ -85,11 +151,41 @@ async function resetGame(page: Page) {
   await page.waitForTimeout(320);
 }
 
-async function completeChapterOne(page: Page) {
+async function answerOpening(page: Page, label: string) {
   await advanceAnyInput(page, "С чего начинается хороший продукт?");
-  // Four answers under a line of dialogue is the tallest screen in the stub chapter.
-  await assertViewportIntegrity(page);
-  await choose(page, "С проблемы человека");
+  await choose(page, label);
+}
+
+/** One option, then the step's own confirmation. */
+async function pickOne(page: Page, label: string) {
+  await page.locator(".product-option").filter({ hasText: label }).first().click();
+  await page.locator(".product-confirm").first().click();
+  await page.waitForTimeout(200);
+}
+
+async function pickMany(page: Page, labels: string[], confirmLabel: string) {
+  for (const label of labels) {
+    await page.locator(".product-option").filter({ hasText: label }).first().click();
+  }
+
+  await page.getByRole("button", { name: confirmLabel }).click();
+  await page.waitForTimeout(200);
+}
+
+async function changeComponent(page: Page, componentLabel: string, labels: string[]) {
+  await page.locator(".product-component").filter({ hasText: componentLabel }).first().click();
+
+  for (const label of labels) {
+    await page.locator(".product-option").filter({ hasText: label }).first().click();
+  }
+
+  await page.getByRole("button", { name: "Применить изменение" }).click();
+  await page.waitForTimeout(200);
+}
+
+async function click(page: Page, label: string) {
+  await page.getByRole("button", { name: label }).click();
+  await page.waitForTimeout(200);
 }
 
 async function choose(page: Page, label: string) {

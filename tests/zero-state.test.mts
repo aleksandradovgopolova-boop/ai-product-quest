@@ -53,7 +53,7 @@ test("every runtime situation maps to a state that exists in the sheet", () => {
 
 test("a scene whose every choice leaves the chapter closes the case", () => {
   const content = loadGameContent();
-  const leaving = content.chapterById["chapter-01"].sceneById["belief-ack"];
+  const leaving = content.chapterById["chapter-01"].sceneById["06_launch"];
 
   assert.equal(selectZeroState({ scene: leaving, isProcessing: false }), "closed");
 

@@ -1,5 +1,16 @@
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import type { CampaignState, Chapter, Evidence, PlatformContent, SceneChoice } from "@/src/domain/campaign/types";
+import type {
+  CampaignState,
+  Chapter,
+  Evidence,
+  PlatformContent,
+  ProductComponentKind,
+  ProductOption,
+  ProductRun,
+  SceneCapabilityStep,
+  SceneChoice,
+} from "@/src/domain/campaign/types";
+import { BuildStep, MetricsReadout, RebuildPanel, TestResults } from "@/src/features/chapter-01/view/ProductPanels";
 import { interpolateLines } from "@/src/application/chapter-runner/chapterRunner";
 import { cn } from "@/src/lib/utils";
 import { selectZeroState, speakingDurationMs } from "@/src/features/chapter-01/zeroState";
@@ -16,6 +27,43 @@ import {
   SystemTopbar,
 } from "@/src/features/chapter-01/view/SystemHud";
 
+/**
+ * What the current scene's capability puts in front of the player. The adapter builds it from
+ * the scene and the projection; the view only draws it, so a new capability never reaches into
+ * the engine from here.
+ */
+export type ProductPanel =
+  | {
+      kind: "build";
+      step: SceneCapabilityStep;
+      options: ProductOption[];
+      selected: string[];
+      spent: number;
+      onToggle: (optionId: string) => void;
+      onConfirm: () => void;
+    }
+  | {
+      kind: "tests";
+      run: ProductRun;
+      previous?: ProductRun;
+      confirmLabel: string;
+      onConfirm: () => void;
+    }
+  | {
+      kind: "rebuild";
+      components: Array<{ component: ProductComponentKind; current: string }>;
+      openComponent?: ProductComponentKind;
+      options: ProductOption[];
+      selected: string[];
+      changesUsed: number;
+      maxChanges: number;
+      confirmLabel: string;
+      onOpenComponent: (component?: ProductComponentKind) => void;
+      onToggle: (optionId: string) => void;
+      onApply: () => void;
+      onConfirm: () => void;
+    };
+
 export function Chapter01View({
   activeChoiceIndex,
   canGoBack,
@@ -29,6 +77,7 @@ export function Chapter01View({
   onChoice,
   onCloseCodex,
   onFocusChoice,
+  productPanel,
   shouldReduceMotion,
   systemMessage,
 }: {
@@ -44,6 +93,7 @@ export function Chapter01View({
   onChoice: (choice: SceneChoice) => void;
   onCloseCodex: () => void;
   onFocusChoice: (index: number) => void;
+  productPanel?: ProductPanel;
   shouldReduceMotion: boolean;
   systemMessage?: string;
 }) {
@@ -55,6 +105,8 @@ export function Chapter01View({
   const presentation = scene?.presentation ?? "system";
   const sceneTransition = shouldReduceMotion ? { duration: 0.01 } : { duration: 0.42, ease: "easeOut" as const };
   const lineDelay = shouldReduceMotion ? 0 : 0.08;
+  // The readout appears once there is a product to describe, and stays for the rest of the chapter.
+  const hasProduct = Boolean(campaign.product.configuration.problemId);
 
   if (!scene) {
     return null;
@@ -104,9 +156,15 @@ export function Chapter01View({
               {scene.visual === "context" ? <ContextTrace evidence={scene.evidence ?? []} /> : null}
               {scene.visual === "signal" ? <SystemSignal /> : null}
               {scene.showEffects ? <EffectsReadout campaign={campaign} labels={content.metricLabels} /> : null}
+              {hasProduct ? <MetricsReadout metrics={campaign.playerMetrics} /> : null}
+              {productPanel?.kind === "tests" ? (
+                <TestResults previous={productPanel.previous} run={productPanel.run} />
+              ) : null}
             </div>
 
-            {choices.length > 0 ? (
+            {productPanel ? (
+              <ProductPanelBlock panel={productPanel} shouldReduceMotion={shouldReduceMotion} />
+            ) : choices.length > 0 ? (
               <AnimatePresence mode="wait">
                 {isProcessing ? (
                   <ProcessingBlock key="processing" />
@@ -142,6 +200,49 @@ export function Chapter01View({
         </AnimatePresence>
       </main>
     </MotionConfig>
+  );
+}
+
+function ProductPanelBlock({ panel, shouldReduceMotion }: { panel: ProductPanel; shouldReduceMotion: boolean }) {
+  if (panel.kind === "build") {
+    return (
+      <BuildStep
+        onConfirm={panel.onConfirm}
+        onToggle={panel.onToggle}
+        options={panel.options}
+        selected={panel.selected}
+        shouldReduceMotion={shouldReduceMotion}
+        spent={panel.spent}
+        step={panel.step}
+      />
+    );
+  }
+
+  if (panel.kind === "rebuild") {
+    return (
+      <RebuildPanel
+        changesUsed={panel.changesUsed}
+        components={panel.components}
+        confirmLabel={panel.confirmLabel}
+        maxChanges={panel.maxChanges}
+        onApply={panel.onApply}
+        onConfirm={panel.onConfirm}
+        onOpenComponent={panel.onOpenComponent}
+        onToggle={panel.onToggle}
+        openComponent={panel.openComponent}
+        options={panel.options}
+        selected={panel.selected}
+      />
+    );
+  }
+
+  // The readings themselves sit with the scene copy; down here is only the way forward.
+  return (
+    <div className="flow-choices">
+      <button className="product-confirm product-confirm-final" onClick={panel.onConfirm} type="button">
+        {panel.confirmLabel}
+      </button>
+    </div>
   );
 }
 

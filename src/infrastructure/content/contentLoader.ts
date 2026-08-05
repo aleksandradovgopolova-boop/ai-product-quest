@@ -7,6 +7,7 @@ import type {
   Chapter,
   CodexEntry,
   PlatformContent,
+  ProductCatalogue,
   Scene,
   Season,
 } from "@/src/domain/campaign/types";
@@ -18,6 +19,7 @@ type RawPlatform = {
   defaultChapterId: string;
   defaultRoute: string;
   metricLabels?: Record<string, string>;
+  playerMetricLabels?: Record<string, string>;
 };
 
 type RawSeason = {
@@ -77,6 +79,7 @@ export function loadGameContent(): PlatformContent {
     title: platform.title,
     defaultCampaignId: `${platform.id}:campaign:v1`,
     metricLabels: platform.metricLabels ?? {},
+    playerMetricLabels: platform.playerMetricLabels ?? {},
     seasons: [season],
     chapters: [chapter],
     chapterById: indexById([chapter]),
@@ -92,9 +95,14 @@ export function loadGameContent(): PlatformContent {
 }
 
 export function loadChapter(chapterId: string): Chapter {
-  const chapter = readYaml<Omit<Chapter, "scenes" | "sceneById">>(`chapters/${chapterId}/chapter.yml`, "chapter.schema.json");
+  const chapter = readYaml<Omit<Chapter, "scenes" | "sceneById" | "product">>(`chapters/${chapterId}/chapter.yml`, "chapter.schema.json");
   const { scenes } = readYaml<RawScenes>(`chapters/${chapterId}/scenes.yml`, "scene.schema.json");
   const sceneById = indexById(scenes);
+  // A chapter that builds a product carries its catalogue next to its scenes. Chapters that do
+  // not build anything simply have no product.yml, and their scenes declare no capability.
+  const product = chapter.mechanics.includes("build")
+    ? readYaml<ProductCatalogue>(`chapters/${chapterId}/product.yml`, "product.schema.json")
+    : undefined;
 
   if (!sceneById[chapter.initialSceneId]) {
     throw new Error(`Chapter ${chapter.id} points to missing initial scene: ${chapter.initialSceneId}`);
@@ -114,13 +122,64 @@ export function loadChapter(chapterId: string): Chapter {
     if (scene.advanceMode === "any-input" && !scene.autoNextSceneId) {
       throw new Error(`Scene ${scene.id} uses any-input advance without autoNextSceneId`);
     }
+
+    if (scene.capability?.nextSceneId && !sceneById[scene.capability.nextSceneId]) {
+      throw new Error(`Scene ${scene.id} capability continues to missing scene: ${scene.capability.nextSceneId}`);
+    }
+
+    if (scene.capability && !product) {
+      throw new Error(`Scene ${scene.id} declares a capability but chapter ${chapter.id} has no product catalogue`);
+    }
+  }
+
+  if (product) {
+    assertProductReferences(chapter.id, product);
   }
 
   return {
     ...chapter,
     scenes,
     sceneById,
+    product,
   };
+}
+
+/**
+ * `provides`, `mitigates` and `requires` speak in capability tokens. A typo in any of them would
+ * silently make a scenario unservable, so every token has to be declared before content loads.
+ */
+function assertProductReferences(chapterId: string, product: ProductCatalogue) {
+  const known = new Set(Object.keys(product.capabilities));
+  const assertToken = (token: string, where: string) => {
+    if (!known.has(token)) {
+      throw new Error(`Chapter ${chapterId} ${where} uses undeclared capability: ${token}`);
+    }
+  };
+
+  const optionGroups: Array<[string, ProductCatalogue["tools"]]> = [
+    ["modelRoles", product.modelRoles],
+    ["contextItems", product.contextItems],
+    ["tools", product.tools],
+    ["boundaries", product.boundaries],
+  ];
+
+  for (const [groupName, options] of optionGroups) {
+    for (const option of options) {
+      for (const token of [...(option.provides ?? []), ...(option.mitigates ?? [])]) {
+        assertToken(token, `${groupName}/${option.id}`);
+      }
+    }
+  }
+
+  for (const problem of product.problems) {
+    for (const scenario of problem.scenarios) {
+      for (const [component, tokens] of Object.entries(scenario.requires ?? {})) {
+        for (const token of tokens ?? []) {
+          assertToken(token, `${problem.id}/${scenario.id}/requires.${component}`);
+        }
+      }
+    }
+  }
 }
 
 function readYaml<T>(relativePath: string, schemaName: string): T {

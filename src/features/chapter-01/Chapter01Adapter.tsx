@@ -4,12 +4,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { advanceToScene, createInitialCampaignState, getSystemMessage, resetCampaign, runChoice } from "@/src/application/chapter-runner/chapterRunner";
+import {
+  changeComponent,
+  confirmCapability,
+  confirmRebuild,
+  currentBuildStep,
+  recordContextToggle,
+  runTests,
+} from "@/src/application/chapter-runner/productRunner";
 import { clearCampaignProjection, loadCampaignProjection, saveCampaignProjection } from "@/src/application/campaign-persistence/campaignPersistence";
+import {
+  countBudget,
+  getOptions,
+  rebuildableComponents,
+} from "@/src/engines/product/productBuilder";
+import { describeSelection } from "@/src/engines/projection/projectProduct";
 import { getChapter } from "@/src/domain/campaign/lookup";
-import type { CampaignState, PlatformContent, SceneChoice } from "@/src/domain/campaign/types";
+import type { CampaignState, PlatformContent, ProductComponentKind, SceneChoice } from "@/src/domain/campaign/types";
 import { useChapterKeyboard } from "@/src/features/chapter-01/keyboard";
 import { playInterfaceTone } from "@/src/features/chapter-01/sound";
-import { Chapter01View } from "@/src/features/chapter-01/view/Chapter01View";
+import { Chapter01View, type ProductPanel } from "@/src/features/chapter-01/view/Chapter01View";
 
 const bootTime = "2026-01-01T00:00:00.000Z";
 
@@ -23,6 +37,10 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
   const [systemMessage, setSystemMessage] = useState<string>();
   // -1 means "nothing aimed at yet": a scene must not pre-highlight any answer.
   const [activeChoice, setActiveChoice] = useState({ index: -1, sceneId: chapter.initialSceneId });
+  // What the player has ticked but not yet confirmed. Deliberately local: only a confirmation
+  // writes to the Event Log, so an abandoned half-selection leaves no trace.
+  const [pendingSelection, setPendingSelection] = useState<string[]>([]);
+  const [openComponent, setOpenComponent] = useState<ProductComponentKind | undefined>(undefined);
   const processingTimerRef = useRef<number | undefined>(undefined);
   const messageTimerRef = useRef<number | undefined>(undefined);
   const prefersReducedMotion = Boolean(useReducedMotion());
@@ -138,7 +156,7 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
       }
 
       playInterfaceTone("confirm");
-      showSystemMessage(getSystemMessage(choice, campaign.currentSceneId));
+      showSystemMessage(getSystemMessage(choice));
       setIsProcessing(true);
 
       if (processingTimerRef.current) {
@@ -150,7 +168,7 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
         setIsProcessing(false);
       }, processingDelay);
     },
-    [campaign.currentSceneId, content, isProcessing, openCodex, processingDelay, router, showSystemMessage],
+    [content, isProcessing, openCodex, processingDelay, router, showSystemMessage],
   );
 
   const moveChoice = useCallback(
@@ -186,6 +204,117 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
     setCampaign((current) => advanceToScene({ content, state: current, sceneId: previousSceneId }));
   }, [campaign, content]);
 
+  const capability = scene.capability;
+  const catalogue = chapter.product;
+  const buildStep = capability?.kind === "build" ? currentBuildStep(capability, campaign.product.configuration) : undefined;
+  // A step is identified by where it sits, so moving on clears what was ticked for the last one.
+  const stepKey = `${scene.id}:${buildStep?.step?.target ?? openComponent ?? ""}`;
+  const lastStepKeyRef = useRef(stepKey);
+
+  useEffect(() => {
+    if (lastStepKeyRef.current !== stepKey) {
+      lastStepKeyRef.current = stepKey;
+      setPendingSelection([]);
+    }
+  }, [stepKey]);
+
+  const toggleOption = useCallback(
+    (optionId: string, single: boolean, isContext: boolean) => {
+      playInterfaceTone("move");
+      setPendingSelection((current) => {
+        if (single) {
+          return [optionId];
+        }
+
+        const selected = current.includes(optionId);
+
+        if (isContext) {
+          setCampaign((state) => recordContextToggle({ content, state, optionId, selected: !selected }));
+        }
+
+        return selected ? current.filter((entry) => entry !== optionId) : [...current, optionId];
+      });
+    },
+    [content],
+  );
+
+  const productPanel = useMemo<ProductPanel | undefined>(() => {
+    if (!capability || !catalogue) {
+      return undefined;
+    }
+
+    if (capability.kind === "build" && buildStep?.step) {
+      const step = buildStep.step;
+      const single = step.select === "one";
+
+      return {
+        kind: "build",
+        step,
+        options: getOptions(catalogue, step.target, campaign.product.configuration),
+        selected: pendingSelection,
+        spent: step.target === "context" ? countBudget(catalogue, pendingSelection, step.budget).spent : 0,
+        onToggle: (optionId) => toggleOption(optionId, single, step.target === "context"),
+        onConfirm: () => {
+          playInterfaceTone("confirm");
+          setCampaign((state) => confirmCapability({ content, state, optionIds: pendingSelection }));
+          setPendingSelection([]);
+        },
+      };
+    }
+
+    if (capability.kind === "run-tests" && campaign.product.latestRun) {
+      return {
+        kind: "tests",
+        run: campaign.product.latestRun,
+        previous: campaign.product.rebuild.confirmed ? campaign.product.firstRun : undefined,
+        confirmLabel: capability.confirmLabel ?? "Дальше",
+        onConfirm: () => {
+          playInterfaceTone("confirm");
+          setCampaign((state) => runTests({ content, state }));
+        },
+      };
+    }
+
+    if (capability.kind === "rebuild") {
+      const configuration = campaign.product.configuration;
+
+      return {
+        kind: "rebuild",
+        components: rebuildableComponents.map((component) => ({
+          component,
+          current: describeSelection(catalogue, configuration, component),
+        })),
+        openComponent,
+        options: openComponent ? getOptions(catalogue, openComponent, configuration) : [],
+        selected: pendingSelection,
+        changesUsed: campaign.product.rebuild.changes.length,
+        maxChanges: capability.maxChanges ?? 0,
+        confirmLabel: capability.confirmLabel ?? "Дальше",
+        onOpenComponent: (component) => {
+          setOpenComponent(component);
+          setPendingSelection([]);
+        },
+        onToggle: (optionId) => toggleOption(optionId, openComponent === "outcome" || openComponent === "modelRole", false),
+        onApply: () => {
+          if (!openComponent) {
+            return;
+          }
+
+          playInterfaceTone("confirm");
+          setCampaign((state) => changeComponent({ content, state, component: openComponent, optionIds: pendingSelection }));
+          setOpenComponent(undefined);
+          setPendingSelection([]);
+        },
+        onConfirm: () => {
+          playInterfaceTone("confirm");
+          setCampaign((state) => confirmRebuild({ content, state }));
+        },
+      };
+    }
+
+    return undefined;
+  }, [buildStep?.step, campaign.product, capability, catalogue, content, openComponent, pendingSelection, toggleOption]);
+
   useChapterKeyboard({
     activeChoiceIndex,
     canAdvanceWithAnyInput,
@@ -214,6 +343,7 @@ export function Chapter01Adapter({ chapterId = "chapter-01", content }: { chapte
       onChoice={choose}
       onCloseCodex={openCodex}
       onFocusChoice={(index) => setActiveChoice({ index, sceneId: campaign.currentSceneId })}
+      productPanel={productPanel}
       shouldReduceMotion={shouldReduceMotion}
       systemMessage={systemMessage}
     />

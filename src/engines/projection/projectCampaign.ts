@@ -1,5 +1,8 @@
 import { applyDecisionEffects } from "@/src/engines/simulation/simulationRules";
 import { generateArtifactRecord } from "@/src/engines/artifact/artifactEngine";
+import { collectConfigurationEffects, currentActionRisk } from "@/src/engines/product/productBuilder";
+import { projectPlayerMetrics } from "@/src/engines/projection/projectPlayerMetrics";
+import { emptyProductProjection, projectProduct } from "@/src/engines/projection/projectProduct";
 import { getChapter, getScene } from "@/src/domain/campaign/lookup";
 import {
   campaignStateSchemaVersion,
@@ -183,6 +186,17 @@ function buildStateSnapshot(params: {
   const decisions = { ...params.decisions };
   const unlockedCodexEntryIds = Array.from(params.unlockedCodexEntryIds);
   const artifacts = [...params.artifacts];
+  const product = chapter.product ? projectProduct(chapter.product, params.eventLog) : emptyProductProjection;
+  // The product is priced by what it currently is, not by the order its pieces were chosen. A
+  // rebuild therefore re-prices the system for free: swap a component and the effects follow.
+  const systemState = chapter.product
+    ? applyDecisionEffects(params.systemState, collectConfigurationEffects(chapter.product, product.configuration))
+    : params.systemState;
+  const playerMetrics = projectPlayerMetrics({
+    systemState,
+    currentActionRisk: chapter.product ? currentActionRisk(chapter.product, product.configuration) : 0,
+    labels: params.content.playerMetricLabels,
+  });
 
   return {
     schemaVersion: campaignStateSchemaVersion,
@@ -190,7 +204,7 @@ function buildStateSnapshot(params: {
     currentChapterId: chapter.id,
     currentSceneId: scene.id,
     eventLog: [...params.eventLog],
-    systemState: { ...params.systemState },
+    systemState,
     system: {
       status: getSystemStatus(scene, currentStageIndex, chapter.stages.length),
       lastMessage: params.lastMessage,
@@ -214,6 +228,8 @@ function buildStateSnapshot(params: {
       unlockedCodexCount: unlockedCodexEntryIds.length,
       artifactCount: artifacts.length,
     },
+    playerMetrics,
+    product,
     variables: { ...params.variables },
   };
 }
